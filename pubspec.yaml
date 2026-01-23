@@ -1,0 +1,29 @@
+name: expense_book
+description: "ExpenseBook - Smart expense tracker with monthly books and weekly limits"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  provider: ^6.1.1
+  uuid: ^4.2.2
+  intl: ^0.18.1
+  fl_chart: ^0.66.0
+  flutter_local_notifications: ^19.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.6
+
+flutter:
+  uses-material-design: true
