@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/monthly_budget.dart';
 import '../providers/budget_provider.dart';
 import '../providers/expense_provider.dart';
+import 'settings_screen.dart';
 import '../services/database_helper.dart';
 import '../utils/currency_formatter.dart';
 
@@ -16,6 +17,17 @@ class LibraryScreen extends StatelessWidget {
         title: const Text('Архив месяцев'),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<List<MonthlyBudget>>(
         future: _loadAllBudgets(),

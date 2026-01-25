@@ -3,6 +3,7 @@ import 'home_screen.dart';
 import 'analytics_screen.dart';
 import 'library_screen.dart';
 import 'settings_screen.dart';
+import 'savings_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -16,9 +17,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    SavingsScreen(),
     AnalyticsScreen(),
     LibraryScreen(),
-    SettingsScreen(),
   ];
 
   @override
@@ -39,6 +40,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Главная',
           ),
           NavigationDestination(
+            icon: Icon(Icons.savings_outlined),
+            selectedIcon: Icon(Icons.savings),
+            label: 'Копилка',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.pie_chart_outline),
             selectedIcon: Icon(Icons.pie_chart),
             label: 'Аналитика',
@@ -47,11 +53,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             icon: Icon(Icons.library_books_outlined),
             selectedIcon: Icon(Icons.library_books),
             label: 'Архив',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Настройки',
           ),
         ],
       ),

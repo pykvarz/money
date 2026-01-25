@@ -58,4 +58,27 @@ class Transaction extends HiveObject {
   String toString() {
     return 'Transaction(id: $id, amount: $amount, type: $type, date: $date, note: $note)';
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'amount': amount,
+      'type': type.index, // Store enum index
+      'categoryId': categoryId,
+      'date': date.toIso8601String(),
+      'note': note,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      id: json['id'],
+      amount: json['amount'],
+      type: TransactionType.values[json['type']],
+      categoryId: json['categoryId'],
+      date: DateTime.parse(json['date']),
+      note: json['note'],
+      createdAt: DateTime.parse(json['createdAt']),
+    );
+  }
 }

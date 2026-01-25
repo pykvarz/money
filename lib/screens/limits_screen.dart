@@ -105,6 +105,18 @@ class WeeklyLimitsTab extends StatelessWidget {
                   limit: limit,
                   category: category,
                   currentSpending: spending,
+                  effectiveLimit: limit.getEffectiveLimit(
+                    expenseProvider.currentMonth,
+                    expenseProvider.currentYear
+                  ),
+                  startDate: limit.getEffectiveDates(
+                    expenseProvider.currentMonth,
+                    expenseProvider.currentYear
+                  )['start']!,
+                  endDate: limit.getEffectiveDates(
+                    expenseProvider.currentMonth,
+                    expenseProvider.currentYear
+                  )['end']!,
                   onTap: () => _showWeeklyLimitDialog(context, existingLimit: limit),
                 ),
               );

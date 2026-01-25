@@ -6,6 +6,8 @@ import '../models/weekly_limit.dart';
 import '../models/monthly_limit.dart';
 import '../models/monthly_budget.dart';
 import '../models/fixed_expense.dart';
+import '../models/transaction_template.dart';
+import '../models/savings_goal.dart';
 
 class DatabaseHelper {
   static const String _transactionsBox = 'transactions';
@@ -14,6 +16,8 @@ class DatabaseHelper {
   static const String _monthlyLimitsBox = 'monthlyLimits';
   static const String _monthlyBudgetsBox = 'monthlyBudgets';
   static const String _fixedExpensesBox = 'fixedExpenses';
+  static const String _transactionTemplatesBox = 'transactionTemplates';
+  static const String _savingsGoalsBox = 'savingsGoals';
 
   final _uuid = const Uuid();
 
@@ -35,6 +39,8 @@ class DatabaseHelper {
     Hive.registerAdapter(MonthlyBudgetAdapter());
     Hive.registerAdapter(MonthlyLimitAdapter());
     Hive.registerAdapter(FixedExpenseAdapter());
+    Hive.registerAdapter(TransactionTemplateAdapter());
+    Hive.registerAdapter(SavingsGoalAdapter());
 
     // Open boxes
     await Hive.openBox<Transaction>(_transactionsBox);
@@ -43,6 +49,9 @@ class DatabaseHelper {
     await Hive.openBox<MonthlyLimit>(_monthlyLimitsBox);
     await Hive.openBox<MonthlyBudget>(_monthlyBudgetsBox);
     await Hive.openBox<FixedExpense>(_fixedExpensesBox);
+    await Hive.openBox<TransactionTemplate>(_transactionTemplatesBox);
+    await Hive.openBox<SavingsGoal>(_savingsGoalsBox);
+    await Hive.openBox('settings');
 
     // Seed default categories if empty
     await _seedDefaultCategories();
@@ -126,6 +135,17 @@ class DatabaseHelper {
       ..sort((a, b) => b.date.compareTo(a.date)); // Latest first
   }
 
+  // Get transactions within a date range
+  List<Transaction> getTransactionsInRange(DateTime start, DateTime end, {String? categoryId}) {
+    final box = Hive.box<Transaction>(_transactionsBox);
+    return box.values
+        .where((txn) =>
+            (categoryId == null || txn.categoryId == categoryId) &&
+            txn.date.isAfter(start.subtract(const Duration(seconds: 1))) &&
+            txn.date.isBefore(end.add(const Duration(seconds: 1))))
+        .toList();
+  }
+
   // Get transactions for current week for a specific category
   List<Transaction> getCurrentWeekTransactions(String categoryId) {
     final box = Hive.box<Transaction>(_transactionsBox);
@@ -187,20 +207,98 @@ class DatabaseHelper {
       return existing;
     }
 
+    // Calculate rollover and get previous target
+    double initialBalance = 0.0;
+    double? previousTarget;
+
+    int prevMonth = month - 1;
+    int prevYear = year;
+    if (prevMonth == 0) {
+      prevMonth = 12;
+      prevYear = year - 1;
+    }
+    
+    // Check if previous budget exists
+    try {
+      final box = Hive.box<MonthlyBudget>(_monthlyBudgetsBox);
+      final prevBudget = box.values.firstWhere(
+        (b) => b.month == prevMonth && b.year == prevYear,
+      );
+      
+      previousTarget = prevBudget.targetRemainingBalance;
+      
+      // Calculate previous month's final balance
+      final prevBalance = getCurrentBalanceForMonth(
+        prevMonth, 
+        prevYear, 
+        prevBudget.initialBalance
+      );
+      
+      double target = prevBudget.targetRemainingBalance ?? 0.0;
+      if (prevBalance > target) {
+        initialBalance = prevBalance - target;
+      } else {
+        initialBalance = 0.0; 
+      }
+      
+    } catch (_) {
+      // No previous budget found, start with 0
+    }
+
     // Create new budget for this month
     final fixedExpensesTotal = getTotalFixedExpensesForMonth();
-    
+
     final newBudget = MonthlyBudget(
       id: _uuid.v4(),
       month: month,
       year: year,
-      initialBalance: 0.0,
+      initialBalance: initialBalance,
+      targetRemainingBalance: previousTarget, // Copy target
       createdAt: DateTime.now(),
       projectedFixedExpenses: fixedExpensesTotal,
     );
 
     await addMonthlyBudget(newBudget);
     return newBudget;
+  }
+  
+  // Calculate rollover balance from previous month
+  double calculateRolloverFromPreviousMonth(int month, int year) {
+    double rollover = 0.0;
+    
+    int prevMonth = month - 1;
+    int prevYear = year;
+    if (prevMonth == 0) {
+      prevMonth = 12;
+      prevYear = year - 1;
+    }
+    
+    // Check if previous budget exists
+    try {
+      final box = Hive.box<MonthlyBudget>(_monthlyBudgetsBox);
+      final prevBudget = box.values.firstWhere(
+        (b) => b.month == prevMonth && b.year == prevYear,
+      );
+      
+      // Calculate previous month's final balance
+      final prevBalance = getCurrentBalanceForMonth(
+        prevMonth, 
+        prevYear, 
+        prevBudget.initialBalance
+      );
+      
+      double target = prevBudget.targetRemainingBalance ?? 0.0;
+      if (prevBalance > target) {
+        rollover = prevBalance - target;
+      } else {
+        rollover = 0.0; 
+      }
+      
+    } catch (_) {
+      // No previous budget found, start with 0
+    }
+    
+    return rollover;
   }
 
   List<MonthlyBudget> getAllMonthlyBudgets() {
@@ -363,6 +461,97 @@ class DatabaseHelper {
   double getTotalFixedExpensesForMonth() {
     final expenses = getAllFixedExpenses();
     return expenses.fold(0.0, (sum,expense) => sum + expense.amount);
+  }
+
+  // Calculate total all-time savings (Piggy Bank)
+  // Sum of targets met in PAST months.
+  double calculateAllTimeSavings() {
+    final budgets = getAllMonthlyBudgets();
+    final now = DateTime.now();
+    double totalSavings = 0.0;
+    
+    for (var budget in budgets) {
+      // Skip current month (not finished yet) and future months
+      if (budget.year > now.year || (budget.year == now.year && budget.month >= now.month)) {
+        continue;
+      }
+      
+      // Calculate final balance for that month
+      final balance = getCurrentBalanceForMonth(budget.month, budget.year, budget.initialBalance);
+      final target = budget.targetRemainingBalance ?? 0.0;
+      
+      // Logic:
+      // If Balance >= Target: Saved = Target.
+      // If Balance < Target: Saved = 0 (Failed to save, rolled over everything presumably or just spent it).
+      // Or strictly: Saved = min(Balance, Target) if Balance > 0?
+      // User said: "20k to accumulations, 5k to next month".
+      // If I had 10k (Target 20k).
+      // Did I save 10k? Or 0? 
+      // Safe bet: If I didn't reach target, I probably need that money for next month.
+      // So only count "Target" if fully met? 
+      // Or maybe "Savings" is just whatever WASN'T rolled over?
+      // But we calculate rollover naturally.
+      // Let's assume: Savings = min(max(0, balance), target).
+      // If balance 25, target 20 -> Save 20.
+      // If balance 10, target 20 -> Save 10.
+      // If balance -5, target 20 -> Save 0.
+      
+      double saved = 0.0;
+      if (balance > 0) {
+        if (target > 0) {
+           if (balance >= target) {
+             saved = target;
+           } else {
+             saved = balance; // Saved what we could
+           }
+        }
+      }
+      totalSavings += saved;
+    }
+    return totalSavings;
+  }
+
+  // ==================== TEMPLATE OPERATIONS ====================
+
+  Future<void> addTransactionTemplate(TransactionTemplate template) async {
+    final box = Hive.box<TransactionTemplate>(_transactionTemplatesBox);
+    await box.put(template.id, template);
+  }
+
+  Future<void> deleteTransactionTemplate(String id) async {
+    final box = Hive.box<TransactionTemplate>(_transactionTemplatesBox);
+    await box.delete(id);
+  }
+
+  List<TransactionTemplate> getAllTransactionTemplates() {
+    final box = Hive.box<TransactionTemplate>(_transactionTemplatesBox);
+    return box.values.toList();
+  }
+
+  // ==================== SAVINGS GOAL OPERATIONS ====================
+
+  Future<void> addSavingsGoal(SavingsGoal goal) async {
+    final box = Hive.box<SavingsGoal>(_savingsGoalsBox);
+    await box.put(goal.id, goal);
+  }
+
+  Future<void> updateSavingsGoal(SavingsGoal goal) async {
+    await addSavingsGoal(goal);
+  }
+
+  Future<void> deleteSavingsGoal(String id) async {
+    final box = Hive.box<SavingsGoal>(_savingsGoalsBox);
+    await box.delete(id);
+  }
+
+  SavingsGoal? getSavingsGoalById(String id) {
+    final box = Hive.box<SavingsGoal>(_savingsGoalsBox);
+    return box.get(id);
+  }
+
+  List<SavingsGoal> getAllSavingsGoals() {
+    final box = Hive.box<SavingsGoal>(_savingsGoalsBox);
+    return box.values.toList();
   }
 
   // ==================== CLEANUP ====================

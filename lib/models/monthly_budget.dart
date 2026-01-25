@@ -89,6 +89,29 @@ class MonthlyBudget extends HiveObject {
   String toString() {
     return 'MonthlyBudget(month: $month/$year, target: $targetRemainingBalance, initial: $initialBalance)';
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'month': month,
+      'year': year,
+      'targetRemainingBalance': targetRemainingBalance,
+      'initialBalance': initialBalance,
+      'createdAt': createdAt.toIso8601String(),
+      'projectedFixedExpenses': projectedFixedExpenses,
+    };
+  }
+
+  factory MonthlyBudget.fromJson(Map<String, dynamic> json) {
+    return MonthlyBudget(
+      id: json['id'],
+      month: json['month'],
+      year: json['year'],
+      targetRemainingBalance: json['targetRemainingBalance'],
+      initialBalance: json['initialBalance'] ?? 0.0,
+      createdAt: DateTime.parse(json['createdAt']),
+      projectedFixedExpenses: json['projectedFixedExpenses'] ?? 0.0,
+    );
+  }
 }
 
 enum BudgetStatus {

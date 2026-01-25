@@ -64,4 +64,25 @@ class FixedExpense extends HiveObject {
       note: note ?? this.note,
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'amount': amount,
+      'isActive': isActive,
+      'createdAt': createdAt.toIso8601String(),
+      'note': note,
+    };
+  }
+
+  factory FixedExpense.fromJson(Map<String, dynamic> json) {
+    return FixedExpense(
+      id: json['id'],
+      name: json['name'],
+      amount: json['amount'],
+      isActive: json['isActive'] ?? true,
+      createdAt: DateTime.parse(json['createdAt']),
+      note: json['note'],
+    );
+  }
 }

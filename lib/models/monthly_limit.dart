@@ -27,4 +27,21 @@ class MonthlyLimit extends HiveObject {
   String toString() {
     return 'MonthlyLimit(categoryId: $categoryId, limit: $limitAmount, active: $isActive)';
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'categoryId': categoryId,
+      'limitAmount': limitAmount,
+      'isActive': isActive,
+    };
+  }
+
+  factory MonthlyLimit.fromJson(Map<String, dynamic> json) {
+    return MonthlyLimit(
+      id: json['id'],
+      categoryId: json['categoryId'],
+      limitAmount: json['limitAmount'],
+      isActive: json['isActive'] ?? true,
+    );
+  }
 }

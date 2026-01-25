@@ -3,13 +3,18 @@ import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../providers/expense_provider.dart';
 import '../providers/budget_provider.dart';
+import 'settings_screen.dart';
 import '../widgets/safe_daily_budget_card.dart';
 import '../widgets/month_summary_card.dart';
 import '../widgets/transaction_list_item.dart';
 import '../widgets/transaction_dialog.dart';
 import '../widgets/weekly_limit_card.dart';
 import '../widgets/savings_accumulator_card.dart';
+import '../widgets/savings_accumulator_card.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/currency_formatter.dart';
+import 'history_screen.dart';
+import '../widgets/quick_add_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,8 +38,18 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
-        centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: Consumer2<ExpenseProvider, BudgetProvider>(
         builder: (context, expenseProvider, budgetProvider, _) {
@@ -57,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Safe Daily Budget Card
                 SafeDailyBudgetCard(
                   budget: budgetProvider.currentBudget,
+                  safeDailyBudget: budgetProvider.getSmartSafeDailyBudget(expenseProvider), // Use smart calculation
                   currentBalance: currentBalance,
                   todayExpense: todayExpense,
                   onSetTarget: () => _showSetTargetDialog(budgetProvider),
@@ -64,8 +80,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
 
                 // Savings Accumulator Card
+                // Savings Accumulator Card
                 SavingsAccumulatorCard(
-                  totalSavings: budgetProvider.getTotalSavingsThisMonth(expenseProvider),
+                  weeklySavings: budgetProvider.getWeeklySavingsThisMonth(expenseProvider),
+                  totalPiggyBank: budgetProvider.getAllTimePiggyBankSavings(),
                 ),
                 const SizedBox(height: 16),
 
@@ -75,6 +93,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   expense: expenseProvider.getTotalExpense(),
                   balance: currentBalance,
                   fixedExpenses: budgetProvider.getTotalFixedExpenses(),
+                  reservedLimits: budgetProvider.getTotalLimitsQuota(),
+                  limitsBreakdown: budgetProvider.getReservedLimitsBreakdown(expenseProvider),
                 ),
                 const SizedBox(height: 16),
 
@@ -96,15 +116,40 @@ class _HomeScreenState extends State<HomeScreen> {
                       .where((limit) => limit.isActive && limit.isCurrentWeek())
                       .map((limit) {
                     final category = expenseProvider.getCategoryById(limit.categoryId);
-                    final spending = expenseProvider.getCurrentWeekSpending(limit.categoryId);
+                    
+                    // Correct spending for the portion of the week in the current month
+                    final spending = expenseProvider.getWeeklySpendingInMonth(
+                      limit.categoryId, 
+                      limit.weekStartDate, 
+                      expenseProvider.currentMonth, 
+                      expenseProvider.currentYear
+                    );
+
+                    final effectiveLimit = limit.getEffectiveLimit(
+                      expenseProvider.currentMonth, 
+                      expenseProvider.currentYear
+                    );
+
+                    final dates = limit.getEffectiveDates(
+                      expenseProvider.currentMonth, 
+                      expenseProvider.currentYear
+                    );
+                    
                     return WeeklyLimitProgressCard(
                       limit: limit,
                       category: category,
                       currentSpending: spending,
+                      effectiveLimit: effectiveLimit,
+                      startDate: dates['start']!,
+                      endDate: dates['end']!,
                     );
                   }).toList(),
                   const SizedBox(height: 16),
                 ],
+
+                // Quick Add Templates
+                const QuickAddWidget(),
+                const SizedBox(height: 16),
 
                 // Recent Transactions Header
                 Row(
@@ -119,7 +164,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (expenseProvider.transactions.length > 10)
                       TextButton(
                         onPressed: () {
-                          // TODO: Navigate to all transactions
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HistoryScreen(),
+                            ),
+                          );
                         },
                         child: const Text('Все'),
                       ),

@@ -4,6 +4,7 @@ import '../utils/currency_formatter.dart';
 
 class SafeDailyBudgetCard extends StatelessWidget {
   final MonthlyBudget? budget;
+  final double safeDailyBudget; // New parameter
   final double currentBalance;
   final double todayExpense;
   final VoidCallback? onSetTarget;
@@ -11,6 +12,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
   const SafeDailyBudgetCard({
     super.key,
     required this.budget,
+    required this.safeDailyBudget, // Required
     required this.currentBalance,
     required this.todayExpense,
     this.onSetTarget,
@@ -23,7 +25,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
       return _buildNoTargetCard(context);
     }
 
-    final safeDailyBudget = budget!.calculateSafeDailyBudget(currentBalance);
+    // Calculation moved to provider
     final daysLeft = budget!.getDaysLeftInMonth();
     final status = budget!.getBudgetStatus(currentBalance, todayExpense);
 
@@ -33,11 +35,13 @@ class SafeDailyBudgetCard extends StatelessWidget {
       daysLeft: daysLeft,
       status: status,
       target: budget!.targetRemainingBalance!,
+      key: const ValueKey('status_card'),
     );
   }
 
   Widget _buildNoTargetCard(BuildContext context) {
     return Card(
+      key: const ValueKey('no_target_card'),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
@@ -83,6 +87,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
 
   Widget _buildStatusCard(
     BuildContext context, {
+    Key? key,
     required double safeDailyBudget,
     required int daysLeft,
     required BudgetStatus status,
@@ -93,6 +98,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
     final message = _getStatusMessage(status);
 
     return Card(
+      key: key,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(

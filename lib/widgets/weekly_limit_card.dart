@@ -8,6 +8,9 @@ class WeeklyLimitProgressCard extends StatelessWidget {
   final WeeklyLimit limit;
   final models.Category? category;
   final double currentSpending;
+  final double effectiveLimit; // New
+  final DateTime startDate; // New
+  final DateTime endDate; // New
   final VoidCallback? onTap;
 
   const WeeklyLimitProgressCard({
@@ -15,14 +18,17 @@ class WeeklyLimitProgressCard extends StatelessWidget {
     required this.limit,
     this.category,
     required this.currentSpending,
+    required this.effectiveLimit,
+    required this.startDate,
+    required this.endDate,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final percentage = (currentSpending / limit.limitAmount * 100).clamp(0, 100);
-    final remaining = (limit.limitAmount - currentSpending).clamp(0.0, limit.limitAmount);
-    final isOverLimit = currentSpending > limit.limitAmount;
+    final percentage = (currentSpending / effectiveLimit * 100).clamp(0, 100);
+    final remaining = (effectiveLimit - currentSpending).clamp(0.0, effectiveLimit);
+    final isOverLimit = currentSpending > effectiveLimit;
     final isNearLimit = percentage >= 80 && !isOverLimit;
 
     Color progressColor;
@@ -73,10 +79,6 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Builder(
                           builder: (context) {
-                            final now = DateTime.now();
-                            final monday = now.subtract(Duration(days: now.weekday - 1));
-                            final sunday = monday.add(const Duration(days: 6));
-                            
                             // Simple formatter: "20 янв - 26 янв"
                             String formatDate(DateTime date) {
                               final months = [
@@ -87,7 +89,7 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                             }
                             
                             return Text(
-                              '${formatDate(monday)} - ${formatDate(sunday)}',
+                              '${formatDate(startDate)} - ${formatDate(endDate)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
@@ -111,7 +113,7 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'из ${CurrencyFormatter.formatKZT(limit.limitAmount)}',
+                        'из ${CurrencyFormatter.formatKZT(effectiveLimit)}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -136,7 +138,7 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${percentage.toStringAsFixed(0)}% использовано',
+                    '${percentage.toStringAsFixed(1)}% использовано',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -148,7 +150,7 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                         Icon(Icons.warning, size: 14, color: Colors.red),
                         const SizedBox(width: 4),
                         Text(
-                          'Превышен на ${CurrencyFormatter.formatKZT(currentSpending - limit.limitAmount)}',
+                          'Превышен на ${CurrencyFormatter.formatKZT(currentSpending - effectiveLimit)}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.red,

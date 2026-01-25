@@ -112,4 +112,25 @@ class Category extends HiveObject {
       ),
     ];
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'iconCodePoint': iconCodePoint,
+      'colorValue': colorValue,
+      'type': type.index,
+      'isCustom': isCustom,
+    };
+  }
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      id: json['id'],
+      name: json['name'],
+      iconCodePoint: json['iconCodePoint'],
+      colorValue: json['colorValue'],
+      type: CategoryType.values[json['type']],
+      isCustom: json['isCustom'] ?? false,
+    );
+  }
 }

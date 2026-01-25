@@ -33,14 +33,17 @@ class CurrencyFormatter {
     return formatKZT(amount);
   }
 
-  // Format date (e.g., "23 Jan 2026")
+  // Format date (e.g., "23 января 2026")
   static String formatDate(DateTime date) {
-    return DateFormat('d MMM yyyy').format(date);
+    return DateFormat('d MMM yyyy', 'ru_RU').format(date);
   }
 
-  // Format month year (e.g., "January 2026")
+  // Format month year (e.g., "Январь 2026")
   static String formatMonthYear(int month, int year) {
-    return DateFormat('MMMM yyyy').format(DateTime(year, month));
+    final date = DateTime(year, month);
+    final monthName = DateFormat('MMMM', 'ru_RU').format(date);
+    // Capitalize first letter
+    return '${monthName[0].toUpperCase()}${monthName.substring(1)} ${year}';
   }
 
   // Format time (e.g., "14:30")

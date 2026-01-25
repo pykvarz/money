@@ -108,4 +108,50 @@ class ExpenseProvider extends ChangeNotifier {
         .where((txn) => txn.type == TransactionType.expense)
         .fold(0.0, (sum, txn) => sum + txn.amount);
   }
+
+  // Get spending for a specific week slice within a month
+  double getWeeklySpendingInMonth(String categoryId, DateTime weekStart, int month, int year) {
+    final monthStart = DateTime(year, month, 1);
+    final monthEnd = DateTime(year, month + 1, 0);
+    final weekEnd = weekStart.add(const Duration(days: 6));
+
+    final effectiveStart = weekStart.isBefore(monthStart) ? monthStart : weekStart;
+    final effectiveEnd = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
+
+    final transactions = _db.getTransactionsInRange(
+      effectiveStart,
+      effectiveEnd,
+      categoryId: categoryId,
+    );
+
+    return transactions
+        .where((txn) => txn.type == TransactionType.expense)
+        .fold(0.0, (sum, txn) => sum + txn.amount);
+  }
+  // Analytics: Get 6-month spending trend
+  // Returns list of {month: 'Jan', amount: 50000, year: 2024, monthIndex: 1}
+  List<Map<String, dynamic>> getSixMonthTrend() {
+    final List<Map<String, dynamic>> trend = [];
+    final now = DateTime.now();
+    
+    // Iterate backwards from current month
+    for (int i = 5; i >= 0; i--) {
+      final date = DateTime(now.year, now.month - i, 1);
+      final total = _db.getTotalExpenseForMonth(date.month, date.year);
+      
+      trend.add({
+        'month': _getMonthName(date.month),
+        'amount': total,
+        'year': date.year,
+        'monthIndex': date.month,
+      });
+    }
+    
+    return trend;
+  }
+
+  String _getMonthName(int month) {
+    const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    return months[month - 1];
+  }
 }

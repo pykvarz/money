@@ -11,9 +11,20 @@ import '../services/database_helper.dart';
 import '../utils/currency_formatter.dart';
 import 'categories_screen.dart';
 import 'limits_screen.dart';
+import 'fixed_expenses_screen.dart';
+import '../services/data_service.dart';
+import '../services/notification_service.dart';
+import '../providers/theme_provider.dart';
+import 'package:hive/hive.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +67,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       if (budget?.targetRemainingBalance != null)
                         Column(
+                          key: const ValueKey('settings_target_set'),
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -92,7 +104,7 @@ class SettingsScreen extends StatelessWidget {
                                 ),
                                 Text(
                                   CurrencyFormatter.formatKZTWithDecimals(
-                                    budgetProvider.getSafeDailyBudget(),
+                                    budgetProvider.getSmartSafeDailyBudget(context.read<ExpenseProvider>()),
                                   ),
                                   style: const TextStyle(
                                     fontSize: 16,
@@ -107,6 +119,7 @@ class SettingsScreen extends StatelessWidget {
                         )
                       else
                         Padding(
+                          key: const ValueKey('settings_target_unset'),
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Text(
                             'Цель не установлена',
@@ -235,127 +248,137 @@ class SettingsScreen extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.receipt_long, color: Colors.red.shade700),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Обязательные расходы',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Регулярные ежемесячные платежи (аренда, коммуналка, подписки)',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () => _showFixedExpenseDialog(context),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Добавить расход'),
-                      ),
-                      FutureBuilder<List<FixedExpense>>(
-                        future: _loadFixedExpenses(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          
-                          final expenses = snapshot.data!;
-                          final total = expenses.fold(0.0, (sum, e) => sum + e.amount);
-                          
-                          return Column(
-                            children: [
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Итого в месяц:',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.red.shade900,
-                                      ),
-                                    ),
-                                    Text(
-                                      CurrencyFormatter.formatKZT(total),
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red.shade900,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Divider(height: 24),
-                              ...expenses.map((expense) {
-                                return ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.grey.shade200,
-                                    child: const Icon(
-                                      Icons.receipt,
-                                      color: Colors.grey,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  title: Text(expense.name),
-                                  subtitle: const Text('Оплата: 1 число каждого месяца'),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        CurrencyFormatter.formatKZT(expense.amount),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(Icons.edit_outlined),
-                                        onPressed: () => _showFixedExpenseDialog(
-                                          context,
-                                          existingExpense: expense,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                        onPressed: () => _deleteFixedExpense(context, expense.id),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
+                child: ListTile(
+                  leading: Icon(Icons.receipt_long, color: Colors.red.shade700),
+                  title: const Text('Обязательные расходы'),
+                  subtitle: const Text('Регулярные платежи (аренда, подписки)'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FixedExpensesScreen()),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
+              const SizedBox(height: 16),
+
+              // Appearance Card
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, _) {
+                    return ListTile(
+                      leading: const Icon(Icons.brightness_6, color: Colors.indigo),
+                      title: const Text('Тема оформления'),
+                      subtitle: Text(themeProvider.themeName),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _showThemeDialog(context, themeProvider),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Notifications Card
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.notifications, color: Colors.amber),
+                      title: const Text('Уведомления'),
+                      subtitle: const Text('Настройка времени напоминаний'),
+                    ),
+                    const Divider(height: 1),
+                    FutureBuilder<TimeOfDay>(
+                      future: _getDailyReminderTime(),
+                      builder: (context, snapshot) {
+                        final time = snapshot.data ?? const TimeOfDay(hour: 21, minute: 0);
+                        return ListTile(
+                          title: const Text('Ежедневное напоминание'),
+                          subtitle: Text('${time.hour}:${time.minute.toString().padLeft(2, '0')}'),
+                          trailing: const Icon(Icons.edit, size: 20),
+                          onTap: () => _pickDailyReminderTime(context),
+                        );
+                      }
+                    ),
+                    const Divider(height: 1),
+                    FutureBuilder<TimeOfDay>(
+                      future: _getWeeklyReminderTime(),
+                      builder: (context, snapshot) {
+                        final time = snapshot.data ?? const TimeOfDay(hour: 20, minute: 0);
+                        return ListTile(
+                          title: const Text('Итоги недели (Вс)'),
+                          subtitle: Text('${time.hour}:${time.minute.toString().padLeft(2, '0')}'),
+                          trailing: const Icon(Icons.edit, size: 20),
+                          onTap: () => _pickWeeklyReminderTime(context),
+                        );
+                      }
+                    ),
+
+
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Backup & Reset Card
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.cloud_download, color: Colors.teal),
+                      title: const Text('Резервная копия'),
+                      subtitle: const Text('Сохранить или восстановить данные'),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.upload_file),
+                      title: const Text('Экспорт данных'),
+                      subtitle: const Text('Сохранить в файл'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () async {
+                         await DataService().exportData(context);
+                      },
+                    ),
+                    const Divider(height: 1),
+
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.file_download),
+                      title: const Text('Импорт данных'),
+                      subtitle: const Text('Восстановить из файла'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () async {
+                         await DataService().importData(context);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.table_chart_outlined, color: Colors.green),
+                      title: const Text('Экспорт в Excel (CSV)'),
+                      subtitle: const Text('Скачать историю транзакций'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () async {
+                         await DataService().exportTransactionsToCsv(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
               // Info Card
               Card(
                 elevation: 2,
@@ -592,61 +615,111 @@ class SettingsScreen extends StatelessWidget {
       await provider.deleteWeeklyLimit(id);
     }
   }
-
-  Future<List<FixedExpense>> _loadFixedExpenses() async {
-    final db = DatabaseHelper();
-    return db.getAllFixedExpenses();
+  Future<TimeOfDay> _getDailyReminderTime() async {
+    final box = await Hive.openBox('settings');
+    final hour = box.get('daily_reminder_hour', defaultValue: 21);
+    final minute = box.get('daily_reminder_minute', defaultValue: 0);
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
-  Future<void> _showFixedExpenseDialog(
-    BuildContext context, {
-    FixedExpense? existingExpense,
-  }) async {
-    final result = await showDialog<FixedExpense>(
+  Future<TimeOfDay> _getWeeklyReminderTime() async {
+    final box = await Hive.openBox('settings');
+    final hour = box.get('weekly_reminder_hour', defaultValue: 20);
+    final minute = box.get('weekly_reminder_minute', defaultValue: 0);
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  Future<void> _pickDailyReminderTime(BuildContext context) async {
+    final initialTime = await _getDailyReminderTime();
+    final picked = await showTimePicker(
       context: context,
-      builder: (context) => FixedExpenseDialog(
-        existingExpense: existingExpense,
-      ),
+      initialTime: initialTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
     );
 
-    if (result != null) {
-      // Use Provider to ensure UI updates via notifyListeners
-      if (context.mounted) {
-        final provider = Provider.of<BudgetProvider>(context, listen: false);
-        if (existingExpense != null) {
-           await provider.updateFixedExpense(result);
-        } else {
-           await provider.addFixedExpense(result);
-        }
-      }
+    if (picked != null) {
+      final box = await Hive.openBox('settings');
+      await box.put('daily_reminder_hour', picked.hour);
+      await box.put('daily_reminder_minute', picked.minute);
+      
+      await NotificationService().scheduleDailyReminder(picked);
+      
+      // Force rebuild to show new time
+      setState(() {});
     }
   }
 
-  Future<void> _deleteFixedExpense(BuildContext context, String id) async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _pickWeeklyReminderTime(BuildContext context) async {
+    final initialTime = await _getWeeklyReminderTime();
+    final picked = await showTimePicker(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Удалить расход?'),
-        content: const Text('Это действие нельзя отменить.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Отмена'),
+      initialTime: initialTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final box = await Hive.openBox('settings');
+      await box.put('weekly_reminder_hour', picked.hour);
+      await box.put('weekly_reminder_minute', picked.minute);
+      
+      // Reschedule, keeping the content dynamic (it will be updated next time budget status is checked, 
+      // or we can explicitly trigger a refresh here if we want immediate content update, 
+      // but scheduling with default body is fine for now as it will just confirm the time).
+      await NotificationService().scheduleWeeklySummary(picked);
+      
+      // Force rebuild
+      (context as Element).markNeedsBuild();
+    }
+  }
+
+  Future<void> _showThemeDialog(BuildContext context, ThemeProvider provider) async {
+    await showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Выберите тему'),
+        children: [
+          RadioListTile<ThemeMode>(
+            title: const Text('Системная'),
+            value: ThemeMode.system,
+            groupValue: provider.themeMode,
+            onChanged: (value) {
+              provider.setTheme(value!);
+              Navigator.pop(context);
+            },
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('Удалить'),
+          RadioListTile<ThemeMode>(
+            title: const Text('Светлая'),
+            value: ThemeMode.light,
+            groupValue: provider.themeMode,
+            onChanged: (value) {
+              provider.setTheme(value!);
+            },
+          ),
+          RadioListTile<ThemeMode>(
+            title: const Text('Темная'),
+            value: ThemeMode.dark,
+            groupValue: provider.themeMode,
+            onChanged: (value) {
+              provider.setTheme(value!);
+              Navigator.pop(context);
+            },
           ),
         ],
       ),
     );
-
-    if (confirmed == true && context.mounted) {
-      final provider = Provider.of<BudgetProvider>(context, listen: false);
-      await provider.deleteFixedExpense(id);
-    }
   }
+
+
 }
+
+

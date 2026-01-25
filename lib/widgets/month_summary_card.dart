@@ -5,7 +5,9 @@ class MonthSummaryCard extends StatelessWidget {
   final double income;
   final double expense;
   final double balance;
-  final double fixedExpenses; // New parameter
+  final double fixedExpenses;
+  final double reservedLimits;
+  final Map<String, double>? limitsBreakdown; // New
 
   const MonthSummaryCard({
     super.key,
@@ -13,6 +15,8 @@ class MonthSummaryCard extends StatelessWidget {
     required this.expense,
     required this.balance,
     this.fixedExpenses = 0.0,
+    this.reservedLimits = 0.0,
+    this.limitsBreakdown,
   });
 
   @override
@@ -71,21 +75,55 @@ class MonthSummaryCard extends StatelessWidget {
               amountColor: gap >= 0 ? Colors.green[700]! : Colors.red[700]!,
             ),
             
-            if (fixedExpenses > 0) ...[
+            if (fixedExpenses > 0 || reservedLimits > 0) ...[
               const Divider(height: 24),
-              _buildRow(
-                context,
-                icon: Icons.assignment_turned_in,
-                iconColor: Colors.orange,
-                label: 'Свободно (после счетов)',
-                amount: balance - fixedExpenses,
-                amountColor: (balance - fixedExpenses) >= 0 ? Colors.blue[800]! : Colors.red[800]!,
-                isBold: true,
-              ),
+              if (fixedExpenses > 0)
+                _buildRow(
+                  context,
+                  icon: Icons.assignment_turned_in,
+                  iconColor: Colors.orange,
+                  label: 'Обязательные расходы',
+                  amount: fixedExpenses,
+                  amountColor: Colors.orange[800]!,
+                ),
+              if (fixedExpenses > 0 && reservedLimits > 0)
+                const SizedBox(height: 12),
+              if (reservedLimits > 0) ...[
+                _buildRow(
+                  context,
+                  icon: Icons.timer,
+                  iconColor: Colors.purple,
+                  label: 'Бронь под лимиты',
+                  amount: reservedLimits,
+                  amountColor: Colors.purple[700]!,
+                ),
+                if (limitsBreakdown != null && limitsBreakdown!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 32, top: 8),
+                    child: Column(
+                      children: limitsBreakdown!.entries.map((entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              entry.key,
+                              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            ),
+                            Text(
+                              CurrencyFormatter.formatKZT(entry.value),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+                            ),
+                          ],
+                        ),
+                      )).toList(),
+                    ),
+                  ),
+              ],
               Padding(
-                padding: const EdgeInsets.only(top: 4, left: 32),
+                padding: const EdgeInsets.only(top: 8, left: 32),
                 child: Text(
-                  'За вычетом ${CurrencyFormatter.formatKZT(fixedExpenses)} обязательных расходов',
+                  'Уже вычтены из баланса',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],

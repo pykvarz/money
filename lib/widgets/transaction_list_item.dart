@@ -21,67 +21,77 @@ class TransactionListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isIncome = transaction.type == TransactionType.income;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: ListTile(
-        onTap: onTap,
-        leading: CircleAvatar(
-          backgroundColor: category?.color.withOpacity(0.2) ?? Colors.grey[200],
-          child: Icon(
-            category?.icon ?? Icons.question_mark,
-            color: category?.color ?? Colors.grey,
-            size: 24,
+    return Dismissible(
+      key: Key(transaction.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.red,
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        if (onDelete != null) {
+          onDelete!();
+        }
+        return false; // Let parent handle deletion to avoid premature UI removal
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: ListTile(
+          onTap: onTap,
+          leading: CircleAvatar(
+            backgroundColor: category?.color.withOpacity(0.2) ?? Colors.grey[200],
+            child: Icon(
+              category?.icon ?? Icons.question_mark,
+              color: category?.color ?? Colors.grey,
+              size: 24,
+            ),
           ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                category?.name ?? 'Unknown',
-                style: const TextStyle(fontWeight: FontWeight.w600),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  category?.name ?? 'Unknown',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            Text(
-              '${isIncome ? '+' : '-'}${CurrencyFormatter.formatKZT(transaction.amount)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isIncome ? Colors.green[700] : Colors.red[700],
-                fontSize: 16,
+              Text(
+                '${isIncome ? '+' : '-'}${CurrencyFormatter.formatKZT(transaction.amount)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isIncome ? Colors.green[700] : Colors.red[700],
+                  fontSize: 16,
+                ),
               ),
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (transaction.note != null && transaction.note!.isNotEmpty)
+            ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (transaction.note != null && transaction.note!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    transaction.note!,
+                    style: TextStyle(color: Colors.grey[600]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  transaction.note!,
-                  style: TextStyle(color: Colors.grey[600]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  CurrencyFormatter.formatDate(transaction.date),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                CurrencyFormatter.formatDate(transaction.date),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-        trailing: onDelete != null
-            ? IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: onDelete,
-              )
-            : null,
       ),
     );
   }

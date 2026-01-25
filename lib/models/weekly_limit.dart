@@ -57,8 +57,62 @@ class WeeklyLimit extends HiveObject {
     );
   }
 
+  // Calculate effective limit for a specific month and year
+  double getEffectiveLimit(int month, int year) {
+    final monthStart = DateTime(year, month, 1);
+    final monthEnd = DateTime(year, month + 1, 0);
+    
+    final weekStart = weekStartDate;
+    final weekEnd = weekStartDate.add(const Duration(days: 6));
+    
+    // Find intersection of week and month
+    final effectiveStart = weekStart.isBefore(monthStart) ? monthStart : weekStart;
+    final effectiveEnd = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
+    
+    if (effectiveStart.isAfter(effectiveEnd)) return 0.0;
+    
+    final activeDaysInMonth = effectiveEnd.difference(effectiveStart).inDays + 1;
+    return (limitAmount / 7.0) * activeDaysInMonth;
+  }
+
+  // Get the effective start and end dates for this week within a specific month
+  Map<String, DateTime> getEffectiveDates(int month, int year) {
+    final monthStart = DateTime(year, month, 1);
+    final monthEnd = DateTime(year, month + 1, 0);
+    
+    final weekStart = weekStartDate;
+    final weekEnd = weekStartDate.add(const Duration(days: 6));
+    
+    final effectiveStart = weekStart.isBefore(monthStart) ? monthStart : weekStart;
+    final effectiveEnd = weekEnd.isAfter(monthEnd) ? monthEnd : weekEnd;
+    
+    return {
+      'start': effectiveStart,
+      'end': effectiveEnd,
+    };
+  }
+
   @override
   String toString() {
     return 'WeeklyLimit(categoryId: $categoryId, limit: $limitAmount, weekStart: $weekStartDate, active: $isActive)';
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'categoryId': categoryId,
+      'limitAmount': limitAmount,
+      'weekStartDate': weekStartDate.toIso8601String(),
+      'isActive': isActive,
+    };
+  }
+
+  factory WeeklyLimit.fromJson(Map<String, dynamic> json) {
+    return WeeklyLimit(
+      id: json['id'],
+      categoryId: json['categoryId'],
+      limitAmount: json['limitAmount'],
+      weekStartDate: DateTime.parse(json['weekStartDate']),
+      isActive: json['isActive'] ?? true,
+    );
   }
 }

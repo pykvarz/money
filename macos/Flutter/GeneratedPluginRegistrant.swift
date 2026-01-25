@@ -5,8 +5,12 @@
 import FlutterMacOS
 import Foundation
 
-import flutter_local_notifications
+import awesome_notifications
+import file_picker
+import share_plus
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
+  AwesomeNotificationsPlugin.register(with: registry.registrar(forPlugin: "AwesomeNotificationsPlugin"))
+  FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))
+  SharePlusMacosPlugin.register(with: registry.registrar(forPlugin: "SharePlusMacosPlugin"))
 }
