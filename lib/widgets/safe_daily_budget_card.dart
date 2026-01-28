@@ -4,7 +4,8 @@ import '../utils/currency_formatter.dart';
 
 class SafeDailyBudgetCard extends StatelessWidget {
   final MonthlyBudget? budget;
-  final double safeDailyBudget; // New parameter
+  final double totalDisposable; // New parameter
+  final double safeDailyBudget; // Restored
   final double currentBalance;
   final double todayExpense;
   final VoidCallback? onSetTarget;
@@ -12,7 +13,8 @@ class SafeDailyBudgetCard extends StatelessWidget {
   const SafeDailyBudgetCard({
     super.key,
     required this.budget,
-    required this.safeDailyBudget, // Required
+    required this.safeDailyBudget,
+    required this.totalDisposable, // Required
     required this.currentBalance,
     required this.todayExpense,
     this.onSetTarget,
@@ -20,18 +22,33 @@ class SafeDailyBudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // No target set
     if (budget == null || budget!.targetRemainingBalance == null) {
       return _buildNoTargetCard(context);
     }
-
-    // Calculation moved to provider
+    
+    // Status logic remains the same (based on daily health)
+    // Or should it be based on total? 
+    // Let's keep status as "Daily Spending Health" but show "Total Available" as the big number.
+    // Status logic based on the Passed Safe Daily Budget (which now matches the displayed Total)
     final daysLeft = budget!.getDaysLeftInMonth();
-    final status = budget!.getBudgetStatus(currentBalance, todayExpense);
+    
+    BudgetStatus status = BudgetStatus.neutral;
+    if (safeDailyBudget > 0) {
+      if (todayExpense <= safeDailyBudget * 0.8) {
+        status = BudgetStatus.good;
+      } else if (todayExpense <= safeDailyBudget) {
+        status = BudgetStatus.warning;
+      } else {
+        status = BudgetStatus.danger;
+      }
+    } else {
+       // If budget is 0 or negative
+       status = todayExpense > 0 ? BudgetStatus.danger : BudgetStatus.warning;
+    }
 
     return _buildStatusCard(
       context,
-      safeDailyBudget: safeDailyBudget,
+      mainValue: totalDisposable, // Show Total
       daysLeft: daysLeft,
       status: status,
       target: budget!.targetRemainingBalance!,
@@ -40,6 +57,8 @@ class SafeDailyBudgetCard extends StatelessWidget {
   }
 
   Widget _buildNoTargetCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Card(
       key: const ValueKey('no_target_card'),
       elevation: 2,
@@ -49,19 +68,23 @@ class SafeDailyBudgetCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [Colors.grey[100]!, Colors.grey[50]!],
+            colors: [
+               colorScheme.surfaceContainerHighest,
+               colorScheme.surface,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
         child: Column(
           children: [
-            const Icon(Icons.info_outline, size: 48, color: Colors.grey),
+            Icon(Icons.info_outline, size: 48, color: colorScheme.onSurfaceVariant),
             const SizedBox(height: 12),
             Text(
               'Установите целевой баланс',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -69,7 +92,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
             Text(
               'для включения умного планирования бюджета',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: colorScheme.onSurfaceVariant,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -88,14 +111,13 @@ class SafeDailyBudgetCard extends StatelessWidget {
   Widget _buildStatusCard(
     BuildContext context, {
     Key? key,
-    required double safeDailyBudget,
+    required double mainValue,
     required int daysLeft,
     required BudgetStatus status,
     required double target,
   }) {
-    final colors = _getStatusColors(status);
-    final icon = _getStatusIcon(status);
-    final message = _getStatusMessage(status);
+    final colors = _getStatusColors(context, status); // Pass context
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       key: key,
@@ -114,30 +136,13 @@ class SafeDailyBudgetCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status header
-            Row(
-              children: [
-                Icon(icon, color: colors['text'], size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    message,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: colors['text'],
-                    ),
-                  ),
-                ),
-              ],
-            ),
             const SizedBox(height: 20),
-            // Daily budget amount
+            // Total Disposable amount
             Center(
               child: Column(
                 children: [
                   Text(
-                    CurrencyFormatter.formatKZTWithDecimals(safeDailyBudget),
+                    CurrencyFormatter.formatKZTWithDecimals(mainValue),
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
@@ -146,7 +151,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'безопасно потратить сегодня',
+                    'доступно до конца месяца',
                     style: TextStyle(
                       fontSize: 14,
                       color: colors['text']!.withOpacity(0.8),
@@ -161,8 +166,8 @@ class SafeDailyBudgetCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildDetailItem(
-                  'Осталось дней',
-                  daysLeft.toString(),
+                  'Баланс',
+                  CurrencyFormatter.formatKZT(currentBalance),
                   colors['text']!,
                 ),
                 Container(
@@ -206,31 +211,33 @@ class SafeDailyBudgetCard extends StatelessWidget {
     );
   }
 
-  Map<String, Color> _getStatusColors(BudgetStatus status) {
+  Map<String, Color> _getStatusColors(BuildContext context, BudgetStatus status) {
+     final isDark = Theme.of(context).brightness == Brightness.dark;
+     
     switch (status) {
       case BudgetStatus.good:
         return {
-          'bg': Colors.green[100]!,
-          'bgLight': Colors.green[50]!,
-          'text': Colors.green[900]!,
+          'bg': isDark ? Colors.green[900]! : Colors.green[100]!,
+          'bgLight': isDark ? Colors.green[800]! : Colors.green[50]!,
+          'text': isDark ? Colors.green[100]! : Colors.green[900]!,
         };
       case BudgetStatus.warning:
         return {
-          'bg': Colors.amber[100]!,
-          'bgLight': Colors.amber[50]!,
-          'text': Colors.amber[900]!,
+          'bg': isDark ? Colors.amber[900]! : Colors.amber[100]!,
+          'bgLight': isDark ? Colors.amber[800]! : Colors.amber[50]!,
+          'text': isDark ? Colors.amber[100]! : Colors.amber[900]!,
         };
       case BudgetStatus.danger:
         return {
-          'bg': Colors.red[100]!,
-          'bgLight': Colors.red[50]!,
-          'text': Colors.red[900]!,
+          'bg': isDark ? Colors.red[900]! : Colors.red[100]!,
+          'bgLight': isDark ? Colors.red[800]! : Colors.red[50]!,
+          'text': isDark ? Colors.red[100]! : Colors.red[900]!,
         };
       case BudgetStatus.neutral:
         return {
-          'bg': Colors.grey[100]!,
-          'bgLight': Colors.grey[50]!,
-          'text': Colors.grey[800]!,
+          'bg': isDark ? Colors.grey[800]! : Colors.grey[100]!,
+          'bgLight': isDark ? Colors.grey[700]! : Colors.grey[50]!,
+          'text': isDark ? Colors.grey[100]! : Colors.grey[800]!,
         };
     }
   }

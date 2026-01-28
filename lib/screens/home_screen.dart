@@ -15,6 +15,8 @@ import '../utils/currency_formatter.dart';
 import '../utils/currency_formatter.dart';
 import 'history_screen.dart';
 import '../widgets/quick_add_widget.dart';
+import '../widgets/budget_limit_card.dart';
+import 'package:home_widget/home_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +26,41 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Refresh notification coverage on launch
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final expense = context.read<ExpenseProvider>();
+        context.read<BudgetProvider>().checkBudgetStatus(expense);
+      }
+      _checkForWidgetLaunch();
+    });
+  }
+
+  void _checkForWidgetLaunch() {
+    HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetLaunch);
+    HomeWidget.widgetClicked.listen(_handleWidgetLaunch);
+  }
+
+  void _handleWidgetLaunch(Uri? uri) {
+    if (uri != null && uri.scheme == 'expensebook' && uri.host == 'add_expense') {
+      final categoryId = uri.queryParameters['categoryId'];
+      // Wait for providers to be ready if needed, or just show dialog
+      if (mounted) {
+         // Add a small delay to ensure UI is ready if coming from cold start
+         Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) {
+                final provider = context.read<ExpenseProvider>();
+                // Ensure data is loaded? It usually is by proper provider init.
+                _showTransactionDialog(context, provider, preselectedCategoryId: categoryId);
+            }
+         });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,12 +90,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Consumer2<ExpenseProvider, BudgetProvider>(
         builder: (context, expenseProvider, budgetProvider, _) {
-          // Update notification whenever data changes
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            budgetProvider.updateWeeklyNotification(expenseProvider);
-          });
-
-          final currentBalance = budgetProvider.getCurrentBalance();
+          
+          final currentBalance = budgetProvider.getEffectiveBalance(expenseProvider);
           final todayExpense = _getTodayExpense(expenseProvider);
 
           return RefreshIndicator(
@@ -72,7 +105,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Safe Daily Budget Card
                 SafeDailyBudgetCard(
                   budget: budgetProvider.currentBudget,
-                  safeDailyBudget: budgetProvider.getSmartSafeDailyBudget(expenseProvider), // Use smart calculation
+                  safeDailyBudget: (budgetProvider.currentBudget?.getDaysLeftInMonth() ?? 0) > 0 
+                      ? currentBalance / (budgetProvider.currentBudget!.getDaysLeftInMonth()) 
+                      : 0.0,
+                  totalDisposable: currentBalance, // Pass Total (User: don't subtract target)
                   currentBalance: currentBalance,
                   todayExpense: todayExpense,
                   onSetTarget: () => _showSetTargetDialog(budgetProvider),
@@ -87,14 +123,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Month Summary
+                  // Month Summary
                 MonthSummaryCard(
                   income: expenseProvider.getTotalIncome(),
                   expense: expenseProvider.getTotalExpense(),
                   balance: currentBalance,
+                  daysLeft: budgetProvider.currentBudget?.getDaysLeftInMonth() ?? 0, // Pass Days Left
                   fixedExpenses: budgetProvider.getTotalFixedExpenses(),
                   reservedLimits: budgetProvider.getTotalLimitsQuota(),
                   limitsBreakdown: budgetProvider.getReservedLimitsBreakdown(expenseProvider),
+                  limitsQuota: budgetProvider.getTotalLimitsQuota(), // Restore
+                  limitsSpent: budgetProvider.getTotalLimitsSpent(expenseProvider), // Restore
+                  showRollover: false, // Hide on Home Screen
                 ),
                 const SizedBox(height: 16),
 
@@ -117,6 +157,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       .map((limit) {
                     final category = expenseProvider.getCategoryById(limit.categoryId);
                     
+                    if (category == null) {
+                       return const SizedBox.shrink();
+                    }
+
                     // Correct spending for the portion of the week in the current month
                     final spending = expenseProvider.getWeeklySpendingInMonth(
                       limit.categoryId, 
@@ -135,13 +179,57 @@ class _HomeScreenState extends State<HomeScreen> {
                       expenseProvider.currentYear
                     );
                     
-                    return WeeklyLimitProgressCard(
-                      limit: limit,
-                      category: category,
-                      currentSpending: spending,
-                      effectiveLimit: effectiveLimit,
+                    return BudgetLimitCard(
+                      categoryName: category.name,
+                      icon: IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                      color: Color(category.colorValue),
+                      spent: spending,
+                      limit: effectiveLimit,
                       startDate: dates['start']!,
                       endDate: dates['end']!,
+                    );
+                  }).toList(),
+                  const SizedBox(height: 16),
+                ],
+
+                // MONTHLY LIMITS SECTION
+                if (budgetProvider.monthlyLimits.where((l) => l.isActive).isNotEmpty) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Месячные лимиты',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...budgetProvider.monthlyLimits
+                      .where((limit) => limit.isActive)
+                      .map((limit) {
+                    final category = expenseProvider.getCategoryById(limit.categoryId);
+                    
+                    if (category == null) {
+                       return const SizedBox.shrink();
+                    }
+
+                    final spending = budgetProvider.getMonthlySpending(limit.categoryId);
+                    
+                    // Month start and end
+                    final now = DateTime.now();
+                    final monthStart = DateTime(now.year, now.month, 1);
+                    final monthEnd = DateTime(now.year, now.month + 1, 0);
+
+                    return BudgetLimitCard(
+                      categoryName: category.name,
+                      icon: IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'),
+                      color: Color(category.colorValue),
+                      spent: spending,
+                      limit: limit.limitAmount,
+                      startDate: monthStart,
+                      endDate: monthEnd,
                     );
                   }).toList(),
                   const SizedBox(height: 16),
@@ -260,12 +348,14 @@ class _HomeScreenState extends State<HomeScreen> {
     BuildContext context,
     ExpenseProvider provider, {
     Transaction? transaction,
+    String? preselectedCategoryId,
   }) async {
     final result = await showDialog<Transaction>(
       context: context,
       builder: (context) => TransactionDialog(
         categories: provider.categories,
         transaction: transaction,
+        initialCategoryId: preselectedCategoryId,
       ),
     );
 
@@ -274,6 +364,10 @@ class _HomeScreenState extends State<HomeScreen> {
         await provider.addTransaction(result);
       } else {
         await provider.updateTransaction(result);
+      }
+      // Update notifications
+      if (context.mounted) {
+        context.read<BudgetProvider>().checkBudgetStatus(provider);
       }
     }
   }
@@ -302,6 +396,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (confirmed == true) {
       await provider.deleteTransaction(id);
+      if (mounted) {
+        context.read<BudgetProvider>().checkBudgetStatus(provider);
+      }
     }
   }
 

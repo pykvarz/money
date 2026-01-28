@@ -1,44 +1,41 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'monthly_limit.dart';
+part of 'notification_rule.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class MonthlyLimitAdapter extends TypeAdapter<MonthlyLimit> {
+class NotificationRuleAdapter extends TypeAdapter<NotificationRule> {
   @override
-  final int typeId = 7;
+  final int typeId = 10;
 
   @override
-  MonthlyLimit read(BinaryReader reader) {
+  NotificationRule read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return MonthlyLimit(
-      id: fields[0] as String,
-      categoryId: fields[1] as String,
-      limitAmount: fields[2] as double,
+    return NotificationRule(
+      id: fields[0] as String?,
+      keyword: fields[1] as String,
+      categoryId: fields[2] as String,
       isActive: fields[3] as bool,
-      showInNotification: fields[4] == null ? true : fields[4] as bool,
     );
   }
 
   @override
-  void write(BinaryWriter writer, MonthlyLimit obj) {
+  void write(BinaryWriter writer, NotificationRule obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.categoryId)
+      ..write(obj.keyword)
       ..writeByte(2)
-      ..write(obj.limitAmount)
+      ..write(obj.categoryId)
       ..writeByte(3)
-      ..write(obj.isActive)
-      ..writeByte(4)
-      ..write(obj.showInNotification);
+      ..write(obj.isActive);
   }
 
   @override
@@ -47,7 +44,7 @@ class MonthlyLimitAdapter extends TypeAdapter<MonthlyLimit> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is MonthlyLimitAdapter &&
+      other is NotificationRuleAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

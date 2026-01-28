@@ -180,6 +180,7 @@ class _MonthlyLimitDialogState extends State<MonthlyLimitDialog> {
   
   late String _selectedCategoryId;
   late bool _isActive;
+  late bool _showInNotification;
 
   @override
   void initState() {
@@ -189,6 +190,7 @@ class _MonthlyLimitDialogState extends State<MonthlyLimitDialog> {
       _selectedCategoryId = widget.existingLimit!.categoryId;
       _amountController.text = widget.existingLimit!.limitAmount.toString();
       _isActive = widget.existingLimit!.isActive;
+      _showInNotification = widget.existingLimit!.showInNotification;
     } else {
       final expenseCategories = widget.categories
           .where((c) => c.type == models.CategoryType.expense)
@@ -197,6 +199,7 @@ class _MonthlyLimitDialogState extends State<MonthlyLimitDialog> {
           ? expenseCategories.first.id
           : widget.categories.first.id;
       _isActive = true;
+      _showInNotification = true;
     }
   }
 
@@ -300,6 +303,19 @@ class _MonthlyLimitDialogState extends State<MonthlyLimitDialog> {
                   },
                   contentPadding: EdgeInsets.zero,
                 ),
+                
+                 // Show in widget switch
+                SwitchListTile(
+                  title: const Text('Показывать в виджете'),
+                  subtitle: const Text('Отображать в панели уведомлений'),
+                  value: _showInNotification,
+                  onChanged: (value) {
+                    setState(() {
+                      _showInNotification = value;
+                    });
+                  },
+                  contentPadding: EdgeInsets.zero,
+                ),
                 const SizedBox(height: 24),
 
                 // Buttons
@@ -334,6 +350,7 @@ class _MonthlyLimitDialogState extends State<MonthlyLimitDialog> {
         categoryId: _selectedCategoryId,
         limitAmount: amount,
         isActive: _isActive,
+        showInNotification: _showInNotification,
       );
 
       Navigator.pop(context, limit);

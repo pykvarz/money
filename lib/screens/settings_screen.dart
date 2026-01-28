@@ -10,12 +10,14 @@ import '../widgets/fixed_expense_dialog.dart';
 import '../services/database_helper.dart';
 import '../utils/currency_formatter.dart';
 import 'categories_screen.dart';
+import 'templates_screen.dart';
 import 'limits_screen.dart';
 import 'fixed_expenses_screen.dart';
 import '../services/data_service.dart';
 import '../services/notification_service.dart';
 import '../providers/theme_provider.dart';
 import 'package:hive/hive.dart';
+import 'notification_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -222,6 +224,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Templates Card
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.bookmark, color: Colors.blue),
+                  title: const Text('Шаблоны'),
+                  subtitle: const Text('Управление шаблонами транзакций'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TemplatesScreen()),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Limits Card
               Card(
                 elevation: 2,
@@ -261,6 +282,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Notification Autoparsing Card
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  leading: Icon(Icons.notifications_active, color: Colors.amber.shade700),
+                  title: const Text('Автопарсинг уведомлений'),
+                  subtitle: const Text('Евразийский банк, Kaspi'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 16),
 
               // Appearance Card
@@ -282,6 +321,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Notifications Card
               
               // Notifications Card
               Card(
@@ -581,7 +622,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (result != null) {
-      await budgetProvider.setWeeklyLimit(result);
+      await budgetProvider.setWeeklyLimit(result, expenseProvider);
     }
   }
 
@@ -612,7 +653,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true) {
-      await provider.deleteWeeklyLimit(id);
+      final expenseProvider = context.read<ExpenseProvider>();
+      await provider.deleteWeeklyLimit(id, expenseProvider);
     }
   }
   Future<TimeOfDay> _getDailyReminderTime() async {

@@ -22,13 +22,14 @@ class WeeklyLimitAdapter extends TypeAdapter<WeeklyLimit> {
       limitAmount: fields[2] as double,
       weekStartDate: fields[3] as DateTime,
       isActive: fields[4] as bool,
+      showInNotification: fields[5] == null ? true : fields[5] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, WeeklyLimit obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class WeeklyLimitAdapter extends TypeAdapter<WeeklyLimit> {
       ..writeByte(3)
       ..write(obj.weekStartDate)
       ..writeByte(4)
-      ..write(obj.isActive);
+      ..write(obj.isActive)
+      ..writeByte(5)
+      ..write(obj.showInNotification);
   }
 
   @override

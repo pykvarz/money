@@ -1,44 +1,47 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'monthly_limit.dart';
+part of 'notification_log.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class MonthlyLimitAdapter extends TypeAdapter<MonthlyLimit> {
+class NotificationLogAdapter extends TypeAdapter<NotificationLog> {
   @override
-  final int typeId = 7;
+  final int typeId = 11;
 
   @override
-  MonthlyLimit read(BinaryReader reader) {
+  NotificationLog read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return MonthlyLimit(
-      id: fields[0] as String,
-      categoryId: fields[1] as String,
-      limitAmount: fields[2] as double,
-      isActive: fields[3] as bool,
-      showInNotification: fields[4] == null ? true : fields[4] as bool,
+    return NotificationLog(
+      packageName: fields[0] as String,
+      text: fields[1] as String,
+      timestamp: fields[2] as DateTime,
+      parsedAmount: fields[3] as String?,
+      parsedKeyword: fields[4] as String?,
+      parseSuccess: fields[5] as bool,
     );
   }
 
   @override
-  void write(BinaryWriter writer, MonthlyLimit obj) {
+  void write(BinaryWriter writer, NotificationLog obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
-      ..write(obj.id)
+      ..write(obj.packageName)
       ..writeByte(1)
-      ..write(obj.categoryId)
+      ..write(obj.text)
       ..writeByte(2)
-      ..write(obj.limitAmount)
+      ..write(obj.timestamp)
       ..writeByte(3)
-      ..write(obj.isActive)
+      ..write(obj.parsedAmount)
       ..writeByte(4)
-      ..write(obj.showInNotification);
+      ..write(obj.parsedKeyword)
+      ..writeByte(5)
+      ..write(obj.parseSuccess);
   }
 
   @override
@@ -47,7 +50,7 @@ class MonthlyLimitAdapter extends TypeAdapter<MonthlyLimit> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is MonthlyLimitAdapter &&
+      other is NotificationLogAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

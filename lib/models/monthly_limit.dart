@@ -16,11 +16,15 @@ class MonthlyLimit extends HiveObject {
   @HiveField(3)
   late bool isActive;
 
+  @HiveField(4, defaultValue: true)
+  late bool showInNotification;
+
   MonthlyLimit({
     required this.id,
     required this.categoryId,
     required this.limitAmount,
     this.isActive = true,
+    this.showInNotification = true,
   });
 
   @override
@@ -33,6 +37,7 @@ class MonthlyLimit extends HiveObject {
       'categoryId': categoryId,
       'limitAmount': limitAmount,
       'isActive': isActive,
+      'showInNotification': showInNotification,
     };
   }
 
@@ -42,6 +47,7 @@ class MonthlyLimit extends HiveObject {
       categoryId: json['categoryId'],
       limitAmount: json['limitAmount'],
       isActive: json['isActive'] ?? true,
+      showInNotification: json['showInNotification'] ?? true,
     );
   }
 }

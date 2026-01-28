@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/custom_toast.dart';
 import 'package:provider/provider.dart';
 import '../providers/budget_provider.dart';
 import '../providers/expense_provider.dart';
@@ -96,10 +97,8 @@ class WeeklyLimitsTab extends StatelessWidget {
                 ),
                 confirmDismiss: (_) => _confirmDelete(context),
                 onDismissed: (_) {
-                  budgetProvider.deleteWeeklyLimit(limit.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Лимит удален')),
-                  );
+                  budgetProvider.deleteWeeklyLimit(limit.id, expenseProvider);
+                  CustomToast.show(context, 'Лимит удален');
                 },
                 child: WeeklyLimitProgressCard(
                   limit: limit,
@@ -140,7 +139,7 @@ class WeeklyLimitsTab extends StatelessWidget {
     );
 
     if (result != null) {
-      await budgetProvider.setWeeklyLimit(result);
+      await budgetProvider.setWeeklyLimit(result, expenseProvider);
     }
   }
 
@@ -211,10 +210,8 @@ class MonthlyLimitsTab extends StatelessWidget {
                 ),
                 confirmDismiss: (_) => _confirmDelete(context),
                 onDismissed: (_) {
-                  budgetProvider.deleteMonthlyLimit(limit.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Лимит удален')),
-                  );
+                  budgetProvider.deleteMonthlyLimit(limit.id, expenseProvider);
+                  CustomToast.show(context, 'Лимит удален');
                 },
                 child: MonthlyLimitCard(
                   limit: limit,
@@ -243,7 +240,7 @@ class MonthlyLimitsTab extends StatelessWidget {
     );
 
     if (result != null) {
-      await budgetProvider.setMonthlyLimit(result);
+      await budgetProvider.setMonthlyLimit(result, expenseProvider);
     }
   }
 

@@ -1,10 +1,13 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import '../widgets/transaction_dialog.dart';
 import '../providers/expense_provider.dart';
+import '../providers/budget_provider.dart';
 import '../models/transaction.dart';
+import '../models/category.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -13,55 +16,46 @@ class NotificationService {
 
   GlobalKey<NavigatorState>? _navigatorKey;
 
+  // Channel constants
+  static const String basicChannelKey = 'reminders_v3';
+  static const String statusChannelKey = 'weekly_status';
+
   Future<void> init(GlobalKey<NavigatorState> navigatorKey) async {
     _navigatorKey = navigatorKey;
 
     await AwesomeNotifications().initialize(
-      // set the icon to null if you want to use the default app icon
-      null, 
+      null, // Use default app icon
       [
+        // 1. Basic Channel
         NotificationChannel(
-          channelGroupKey: 'reminders_group',
-          channelKey: 'reminders_v3',
+          channelKey: basicChannelKey,
           channelName: 'Reminders',
           channelDescription: 'Daily and weekly reminders',
           defaultColor: const Color(0xFF9D50DD),
           ledColor: Colors.white,
-          importance: NotificationImportance.Max,
+          importance: NotificationImportance.High,
           channelShowBadge: true,
-          criticalAlerts: true,
         ),
+        // 2. Status Channel (The "Widget")
         NotificationChannel(
-          channelGroupKey: 'status_group',
-          channelKey: 'weekly_status',
+          channelKey: statusChannelKey,
           channelName: 'Weekly Status',
           channelDescription: 'Ongoing weekly summary',
           defaultColor: const Color(0xFF9D50DD),
           ledColor: Colors.white,
-          importance: NotificationImportance.Low,
+          importance: NotificationImportance.Low, // Low importance to be less intrusive but persistent
           channelShowBadge: false,
           playSound: false,
           enableVibration: false,
           locked: true, 
+          onlyAlertOnce: true,
         )
-      ],
-      channelGroups: [
-        NotificationChannelGroup(
-            channelGroupKey: 'reminders_group',
-            channelGroupName: 'Reminders Group'),
-        NotificationChannelGroup(
-            channelGroupKey: 'status_group',
-            channelGroupName: 'Status Group')
       ],
       debug: true,
     );
-
-    // Request permission to send notifications
-    await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
-      if (!isAllowed) {
-        // Option to request permission here or in UI
-      }
-    });
+    
+    // Clear only specific reminders if needed
+    // await AwesomeNotifications().cancelAll(); 
 
     await AwesomeNotifications().setListeners(
         onActionReceivedMethod: onActionReceivedMethod,
@@ -73,12 +67,21 @@ class NotificationService {
     await _scheduleWeeklySummaryReminder();
   }
 
+  Future<void> checkInitialLaunch() async {
+    final ReceivedAction? initialAction = await AwesomeNotifications()
+        .getInitialNotificationAction(removeFromActionEvents: true);
+        
+    if (initialAction != null) {
+       _handleNotificationTap(initialAction.buttonKeyPressed, initialAction.payload);
+    }
+  }
+
   /// Use this method to detect when the user taps on a notification or action button
   @pragma("vm:entry-point")
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
     final service = NotificationService();
     if (service._navigatorKey?.currentState?.context != null) {
-         service._handleNotificationTap();
+         service._handleNotificationTap(receivedAction.buttonKeyPressed, receivedAction.payload);
     }
   }
 
@@ -89,26 +92,55 @@ class NotificationService {
   static Future<void> onNotificationDisplayedMethod(ReceivedNotification receivedNotification) async {}
 
   @pragma("vm:entry-point")
-  static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {}
+  static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {
+      // Logic to recreate if dismissed?
+      if (receivedAction.id == 888) {
+          // It was dismissed (shouldn't happen with locked: true)
+      }
+  }
   
-  void _handleNotificationTap() {
+  void _handleNotificationTap(String? buttonKey, Map<String, String?>? payload) {
     if (_navigatorKey?.currentState?.context != null) {
-      _showAddTransactionDialog(_navigatorKey!.currentState!.context);
+      if (buttonKey == 'ADD_TRANSACTION') {
+        _showAddTransactionDialog(_navigatorKey!.currentState!.context);
+      } else {
+        // Handle widget tap - check for categoryId in payload
+        if (payload != null && payload.containsKey('categoryId')) {
+           final categoryId = payload['categoryId'];
+           _showAddTransactionDialog(_navigatorKey!.currentState!.context, categoryId: categoryId);
+        } else {
+           // Default tap if no payload
+        }
+      }
     }
   }
 
-  Future<void> _showAddTransactionDialog(BuildContext context) async {
+  Future<void> _showAddTransactionDialog(BuildContext context, {String? categoryId}) async {
     final expenseProvider = Provider.of<ExpenseProvider>(context, listen: false);
+    
+    // Find the category object if ID is provided
+    Category? initialCategory;
+    if (categoryId != null) {
+      try {
+        initialCategory = expenseProvider.categories.firstWhere((c) => c.id == categoryId);
+      } catch (e) {
+        // Category not found
+      }
+    }
     
     final result = await showDialog<Transaction>(
       context: context,
       builder: (context) => TransactionDialog(
         categories: expenseProvider.categories,
+        initialCategoryId: categoryId, // Correct parameter name
       ),
     );
 
     if (result != null) {
       await expenseProvider.addTransaction(result);
+      if (context.mounted) {
+        Provider.of<BudgetProvider>(context, listen: false).checkBudgetStatus(expenseProvider);
+      }
     }
   }
 
@@ -125,11 +157,10 @@ class NotificationService {
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: 101,
-        channelKey: 'reminders_v3',
+        channelKey: basicChannelKey,
         title: 'Не забудьте записать расходы!',
         body: 'Потратили что-то сегодня? Запишите, чтобы бюджет был точным.',
         category: NotificationCategory.Reminder,
-        notificationLayout: NotificationLayout.Default,
       ),
       schedule: NotificationCalendar(
         hour: time.hour,
@@ -143,14 +174,14 @@ class NotificationService {
     );
   }
 
-  // Schedule Weekly Summary
+  // Schedule Weekly Summary (Prompt)
   Future<void> scheduleWeeklySummary(TimeOfDay time, {String? body}) async {
     final content = body ?? 'Зайдите, чтобы узнать, сколько вы сэкономили на лимитах!';
     
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: 102,
-        channelKey: 'reminders_v3', 
+        channelKey: basicChannelKey,
         title: 'Итоги недели 📊',
         body: content,
         category: NotificationCategory.Reminder,
@@ -163,90 +194,97 @@ class NotificationService {
         millisecond: 0,
         repeats: true,
         allowWhileIdle: true,
-        preciseAlarm: true,
+        preciseAlarm: true, 
       ),
     );
   }
 
-
-
+  // Persistent Status "Widget" using AwesomeNotifications (Restoring from GitHub pattern)
   Future<void> showWeeklySummaryPersistent({
-    required List<Map<String, dynamic>> items,
+    required List<Map<String, dynamic>> weeklyItems,
+    required List<Map<String, dynamic>> monthlyItems,
     required double totalSpent,
     required double totalLimit,
+    String? weekRange,
   }) async {
-      final percentage = totalLimit > 0 ? (totalSpent / totalLimit * 100).clamp(0, 100).toDouble() : 0.0;
-      final spentStr = totalSpent.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ');
-      final limitStr = totalLimit.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ');
-      
-      String title = 'Статус недели: ${percentage.toInt()}%';
-      String bodyText = 'Потрачено: $spentStr ₸ из $limitStr ₸';
-      
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: 888,
-          channelKey: 'weekly_status',
-          title: title,
-          body: bodyText,
-          summary: 'Ваш бюджет',
-          locked: true,
-          autoDismissible: false,
-          category: NotificationCategory.Progress,
-          notificationLayout: NotificationLayout.ProgressBar,
-          progress: percentage,
-          showWhen: false,
-          color: totalSpent > totalLimit ? Colors.red : const Color(0xFF9D50DD),
-        ),
-      );
+      // Cancel aggregate summary (ID 888) if it exists, to avoid duplicates
+      await AwesomeNotifications().cancel(888);
+
+      final List<Map<String, dynamic>> allItems = [...weeklyItems, ...monthlyItems];
+
+      if (allItems.isEmpty) {
+          // If no limits, maybe show a placeholder or nothing? 
+          // For now, doing nothing or cancelling old ones is safer.
+          return;
+      }
+
+      for (var item in allItems) {
+         final String name = item['name'];
+         final double spent = item['spent'];
+         final double limit = item['limit'];
+         final String idStr = item['id'].toString();
+         
+         // Generate unique ID for notification
+         final int notificationId = 2000 + (idStr.hashCode % 10000).abs();
+         
+         final percentage = limit > 0 ? (spent / limit * 100).clamp(0, 100).toDouble() : 0.0;
+         final spentStr = spent.toInt().toString();
+         final limitStr = limit.toInt().toString();
+         
+         // "Sum of sum" format requested: e.g. "17000 / 20000"
+         // Title: Category: %
+         String title = '$name: ${percentage.toInt()}%';
+         // Date range removed as requested
+         
+         final bodyText = '$spentStr / $limitStr ₸';
+
+         await AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: notificationId,
+              channelKey: statusChannelKey,
+              title: title,
+              body: bodyText,
+              summary: 'Лимиты',
+              locked: true,
+              autoDismissible: false,
+              category: NotificationCategory.Progress,
+              notificationLayout: NotificationLayout.ProgressBar,
+              progress: percentage,
+              showWhen: false,
+              color: spent > limit ? Colors.red : const Color(0xFF9D50DD),
+              payload: {'categoryId': idStr},
+            ),
+         );
+      }
   }
 
-  // Wrapper for persistent summary to match old API
+  // Bridge for old API calls (can be refactored later)
   Future<void> showWeeklySummary({
-    required List<Map<String, dynamic>> items,
+    required List<Map<String, dynamic>> weeklyItems,
+    required List<Map<String, dynamic>> monthlyItems,
     required double totalSpent,
     required double totalLimit,
     required String currency,
+    String? weekRange,
   }) async {
       await showWeeklySummaryPersistent(
-          items: items, 
+          weeklyItems: weeklyItems,
+          monthlyItems: monthlyItems, 
           totalSpent: totalSpent, 
-          totalLimit: totalLimit
+          totalLimit: totalLimit,
+          weekRange: weekRange,
       );
   }
 
-  // Wrapper for updating content
+  // Wrapper for updating content (if needed by Settings)
   Future<void> updateWeeklySummaryContent(double spent, double limit) async {
-    final box = await Hive.openBox('settings');
-    final hour = box.get('weekly_reminder_hour', defaultValue: 20);
-    final minute = box.get('weekly_reminder_minute', defaultValue: 0);
-
-    final saving = limit - spent;
-    String content;
-    if (spent > limit) {
-       content = '⚠️ Расходы: ${spent.toInt()} / Лимит: ${limit.toInt()} (Превышение: ${(spent - limit).toInt()})';
-    } else {
-       content = '✅ Расходы: ${spent.toInt()} / Лимит: ${limit.toInt()} (Экономия: ${saving.toInt()})';
-    }
-    
-    // We restart the schedule with new content? 
-    // Awesome Notifications allows updating by ID.
-    // If we want to strictly update the *scheduled* notification content:
-    await scheduleWeeklySummary(TimeOfDay(hour: hour, minute: minute), body: content);
   }
 
   Future<void> cancelAll() async {
     await AwesomeNotifications().cancelAll();
   }
   
-  Future<List<NotificationModel>> getPendingNotifications() async {
-      return await AwesomeNotifications().listScheduledNotifications();
-  }
-  
   // Helpers
-  Future<String> getCurrentTimezone() async {
-     return await AwesomeNotifications().getLocalTimeZoneIdentifier();
-  }
-
   Future<void> _scheduleDailyReminder() async {
     final box = await Hive.openBox('settings');
     final hour = box.get('daily_reminder_hour', defaultValue: 21);

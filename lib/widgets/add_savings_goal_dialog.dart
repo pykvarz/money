@@ -122,6 +122,8 @@ class _AddSavingsGoalDialogState extends State<AddSavingsGoalDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.goal == null ? 'Новая цель' : 'Редактировать цель'),
+      // Use actionsAlignment to separate buttons if Delete is present
+      actionsAlignment: widget.goal != null ? MainAxisAlignment.spaceBetween : MainAxisAlignment.end,
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -218,14 +220,20 @@ class _AddSavingsGoalDialogState extends State<AddSavingsGoalDialog> {
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Удалить'),
           ),
-        const Spacer(),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Отмена'),
-        ),
-        ElevatedButton(
-          onPressed: _submit,
-          child: const Text('Сохранить'),
+        // Spacer removed
+        Row(
+           mainAxisSize: MainAxisSize.min, // Keep buttons together
+           children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Отмена'),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _submit,
+                child: const Text('Сохранить'),
+              ),
+           ],
         ),
       ],
     );

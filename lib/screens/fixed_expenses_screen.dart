@@ -102,12 +102,14 @@ class _FixedExpensesScreenState extends State<FixedExpensesScreen> {
                       separatorBuilder: (context, index) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final expense = expenses[index];
+                        final colorScheme = Theme.of(context).colorScheme;
+                        
                         return Card(
                           elevation: 0,
-                          color: Colors.grey[50],
+                          color: colorScheme.surfaceContainer, // Theme-aware
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey.shade200),
+                            side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
@@ -119,7 +121,7 @@ class _FixedExpensesScreenState extends State<FixedExpensesScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: colorScheme.surfaceContainerHighest, // Theme-aware
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
@@ -142,16 +144,17 @@ class _FixedExpensesScreenState extends State<FixedExpensesScreen> {
                                       children: [
                                         Text(
                                           expense.name,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,
+                                            color: colorScheme.onSurface, // Theme-aware
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           CurrencyFormatter.formatKZT(expense.amount),
                                           style: TextStyle(
-                                            color: Colors.grey[700],
+                                            color: colorScheme.onSurfaceVariant, // Theme-aware
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),

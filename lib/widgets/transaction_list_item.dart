@@ -41,10 +41,10 @@ class TransactionListItem extends StatelessWidget {
         child: ListTile(
           onTap: onTap,
           leading: CircleAvatar(
-            backgroundColor: category?.color.withOpacity(0.2) ?? Colors.grey[200],
+            backgroundColor: category?.color.withOpacity(0.2) ?? Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Icon(
               category?.icon ?? Icons.question_mark,
-              color: category?.color ?? Colors.grey,
+              color: category?.color ?? Theme.of(context).colorScheme.onSurfaceVariant,
               size: 24,
             ),
           ),

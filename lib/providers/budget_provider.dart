@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // Add Hive
 import '../models/monthly_budget.dart';
 import '../models/weekly_limit.dart';
 import '../models/monthly_limit.dart';
@@ -125,31 +126,55 @@ class BudgetProvider extends ChangeNotifier {
 
   // Update persistent notification with latest stats
   Future<void> updateWeeklyNotification(ExpenseProvider expenseProvider) async {
-    final activeLimits = _weeklyLimits.where((l) => l.isActive).toList();
-    if (activeLimits.isEmpty) {
-      await NotificationService().cancelAll();
+    final now = DateTime.now();
+    final weekStart = _getWeekStart(now);
+    final weekEnd = weekStart.add(const Duration(days: 7)); // Mon-Sun full week logic
+    
+    // Active Limits (that are enabled for notifications)
+    final activeWeeklyLimits = _weeklyLimits.where((l) => l.isActive && l.showInNotification).toList();
+    final activeMonthlyLimits = _monthlyLimits.where((l) => l.isActive && l.showInNotification).toList();
+
+    if (activeWeeklyLimits.isEmpty && activeMonthlyLimits.isEmpty) {
+      // Show a persistent notification prompting user to create limits
+      await NotificationService().showWeeklySummaryPersistent(
+        weeklyItems: [],
+        monthlyItems: [],
+        totalSpent: 0,
+        totalLimit: 0,
+        weekRange: null,
+      );
       return;
     }
 
-    final totalLimit = activeLimits.fold(0.0, (sum, l) => sum + l.limitAmount);
+    final currentMonth = now.month;
+    final currentYear = now.year;
+    
+    // Display Dates Logic
+    final monthStart = DateTime(currentYear, currentMonth, 1);
+    final monthEnd = DateTime(currentYear, currentMonth + 1, 0);
+    final displayStart = weekStart.isBefore(monthStart) ? monthStart : weekStart;
+    final displayEnd = weekEnd.subtract(const Duration(days: 1)).isAfter(monthEnd) 
+        ? monthEnd 
+        : weekEnd.subtract(const Duration(days: 1)); // End is inclusive for display
 
-    final now = DateTime.now();
-    final weekStart = _getWeekStart(now);
-    final weekEnd = weekStart.add(const Duration(days: 7));
-    
     double totalSpent = 0.0;
-    List<Map<String, dynamic>> items = [];
+    double totalCombinedLimit = 0.0;
     
-    for (var limit in activeLimits) {
-      final spending = _getSpendingForWeek(
-        weekStart,
-        weekEnd,
-        limit.categoryId,
-        expenseProvider,
-      );
-      totalSpent += spending;
+    // 1. Process Weekly Limits
+    List<Map<String, dynamic>> weeklyItems = [];
+    for (var limit in activeWeeklyLimits) {
+       final effectiveLimit = limit.getEffectiveLimit(currentMonth, currentYear);
+       final spending = expenseProvider.getWeeklySpendingInMonth(
+          limit.categoryId,
+          limit.weekStartDate,
+          currentMonth,
+          currentYear
+       );
+       
+       totalSpent += spending;
+       totalCombinedLimit += effectiveLimit;
       
-      final category = expenseProvider.categories.firstWhere(
+       final category = expenseProvider.categories.firstWhere(
         (c) => c.id == limit.categoryId,
         orElse: () => models.Category(
           id: 'unknown', 
@@ -160,7 +185,37 @@ class BudgetProvider extends ChangeNotifier {
         ),
       );
       
-      items.add({
+       weeklyItems.add({
+         'id': limit.categoryId, // ID added for unique notification tagging
+         'name': category.name,
+         'spent': spending,
+         'limit': effectiveLimit,
+         'isOver': spending > effectiveLimit,
+       });
+    }
+
+    // 2. Process Monthly Limits
+    List<Map<String, dynamic>> monthlyItems = [];
+    for (var limit in activeMonthlyLimits) {
+      final category = expenseProvider.categories.firstWhere(
+        (c) => c.id == limit.categoryId,
+        orElse: () => models.Category(
+          id: 'unknown', 
+          name: 'Неизвестно', 
+          iconCodePoint: Icons.error.codePoint, 
+          colorValue: Colors.grey.value, 
+          type: models.CategoryType.expense
+        ),
+      );
+
+      final spending = getMonthlySpending(limit.categoryId);
+      
+      // Add to totals
+      totalSpent += spending;
+      totalCombinedLimit += limit.limitAmount;
+
+      monthlyItems.add({
+        'id': limit.categoryId, // ID added for unique notification tagging
         'name': category.name,
         'spent': spending,
         'limit': limit.limitAmount,
@@ -168,11 +223,18 @@ class BudgetProvider extends ChangeNotifier {
       });
     }
 
+    // Format date range: "26.01 - 31.01"
+    final startStr = '${displayStart.day.toString().padLeft(2, '0')}.${displayStart.month.toString().padLeft(2, '0')}';
+    final endStr = '${displayEnd.day.toString().padLeft(2, '0')}.${displayEnd.month.toString().padLeft(2, '0')}';
+    final weekRange = '$startStr - $endStr';
+
     await NotificationService().showWeeklySummary(
-      items: items,
+      weeklyItems: weeklyItems,
+      monthlyItems: monthlyItems,
       totalSpent: totalSpent,
-      totalLimit: totalLimit,
+      totalLimit: totalCombinedLimit,
       currency: 'KZT',
+      weekRange: weekRange,
     );
   }
 
@@ -241,27 +303,31 @@ class BudgetProvider extends ChangeNotifier {
   }
 
   // Add or update weekly limit
-  Future<void> setWeeklyLimit(WeeklyLimit limit) async {
+  Future<void> setWeeklyLimit(WeeklyLimit limit, ExpenseProvider expenseProvider) async {
     await _db.addWeeklyLimit(limit);
     await loadWeeklyLimits();
+    await updateWeeklyNotification(expenseProvider);
   }
   
   // Add or update monthly limit
-  Future<void> setMonthlyLimit(MonthlyLimit limit) async {
+  Future<void> setMonthlyLimit(MonthlyLimit limit, ExpenseProvider expenseProvider) async {
     await _db.addMonthlyLimit(limit);
     await loadMonthlyLimits();
+    await updateWeeklyNotification(expenseProvider);
   }
 
   // Delete weekly limit
-  Future<void> deleteWeeklyLimit(String id) async {
+  Future<void> deleteWeeklyLimit(String id, ExpenseProvider expenseProvider) async {
     await _db.deleteWeeklyLimit(id);
     await loadWeeklyLimits();
+    await updateWeeklyNotification(expenseProvider);
   }
 
   // Delete monthly limit
-  Future<void> deleteMonthlyLimit(String id) async {
+  Future<void> deleteMonthlyLimit(String id, ExpenseProvider expenseProvider) async {
     await _db.deleteMonthlyLimit(id);
     await loadMonthlyLimits();
+    await updateWeeklyNotification(expenseProvider);
   }
 
   // Get active weekly limit for category
@@ -284,7 +350,7 @@ class BudgetProvider extends ChangeNotifier {
         .fold(0.0, (sum, txn) => sum + txn.amount);
   }
 
-  // Calculate current balance
+  // Calculate actual current balance (Income - Expense - Fixed)
   double getCurrentBalance() {
     if (_currentBudget == null) return 0.0;
     
@@ -300,18 +366,26 @@ class BudgetProvider extends ChangeNotifier {
     } else {
       fixedDeduction = _currentBudget!.projectedFixedExpenses;
     }
-    
+
     return baseBalance - fixedDeduction;
   }
 
+  // Calculate effective balance (Actual - Reserved Limits - Unpaid Fixed)
+  double getEffectiveBalance(ExpenseProvider expenseProvider) {
+    final actualBalance = getCurrentBalance();
+    final reserved = getTotalReservedLimits(expenseProvider);
+    final unpaidFixed = getUnpaidFixedExpenses();
+    return actualBalance - reserved - unpaidFixed;
+  }
+
   // Calculate safe daily budget
-  double getSafeDailyBudget() {
+  double getSafeDailyBudget(ExpenseProvider expenseProvider) {
     if (_currentBudget == null) return 0.0;
     
     final currentBalance = getCurrentBalance();
     return _currentBudget!.calculateSafeDailyBudget(
       currentBalance,
-      fixedExpensesTotal: 0.0,
+      fixedExpensesTotal: getUnpaidFixedExpenses(),
     );
   }
 
@@ -319,10 +393,17 @@ class BudgetProvider extends ChangeNotifier {
   double getSmartSafeDailyBudget(ExpenseProvider expenseProvider) {
     if (_currentBudget == null) return 0.0;
     
+    // Valid balance (already deducted fixed & reserved)
+    final effectiveBalance = getEffectiveBalance(expenseProvider);
+     
+     return _currentBudget!.calculateSafeDailyBudget(effectiveBalance, fixedExpensesTotal: 0.0);
+  }
+
+  // Calculate total reserved amount (limit - spent)
+  double getTotalReservedLimits(ExpenseProvider expenseProvider) {
+    if (_currentBudget == null) return 0.0;
     final daysInMonth = _currentBudget!.getTotalDaysInMonth();
-    final currentBalance = getCurrentBalance();
-    
-    double reservedForLimits = 0.0;
+    double reserved = 0.0;
     
     for (var limit in _weeklyLimits.where((l) => l.isActive)) {
        final monthlyQuota = (limit.limitAmount / 7.0) * daysInMonth;
@@ -330,7 +411,7 @@ class BudgetProvider extends ChangeNotifier {
            .where((t) => t.categoryId == limit.categoryId && t.type == TransactionType.expense)
            .fold(0.0, (sum, t) => sum + t.amount);
        final remainingReserved = (monthlyQuota - spentThisMonth).clamp(0.0, double.infinity);
-       reservedForLimits += remainingReserved;
+       reserved += remainingReserved;
     }
     
     for (var limit in _monthlyLimits.where((l) => l.isActive)) {
@@ -338,11 +419,13 @@ class BudgetProvider extends ChangeNotifier {
            .where((t) => t.categoryId == limit.categoryId && t.type == TransactionType.expense)
            .fold(0.0, (sum, t) => sum + t.amount);
        final remaining = (limit.limitAmount - spentThisMonth).clamp(0.0, double.infinity);
-       reservedForLimits += remaining;
+       reserved += remaining;
      }
      
-     return _currentBudget!.calculateSafeDailyBudget(currentBalance, fixedExpensesTotal: reservedForLimits);
+     return reserved;
   }
+    
+
 
   // Calculate total monthly quota for all active limits
   double getTotalLimitsQuota() {
@@ -357,6 +440,98 @@ class BudgetProvider extends ChangeNotifier {
       total += limit.limitAmount;
     }
     return total;
+  }
+
+  // Calculate total spent against active limits
+  double getTotalLimitsSpent(ExpenseProvider expenseProvider) {
+    if (_currentBudget == null) return 0.0;
+    final daysInMonth = _currentBudget!.getTotalDaysInMonth();
+    double totalSpent = 0.0;
+
+    // Weekly Limits
+    for (var limit in _weeklyLimits.where((l) => l.isActive)) {
+       // We only care about spending in THIS month for the limit categories
+       // Ideally we sum up all expenses in that category for the whole month
+       // Because 'Quota' is estimated for the whole month.
+       final spentInMonth = expenseProvider.transactions
+           .where((t) => t.categoryId == limit.categoryId && t.type == TransactionType.expense)
+           .fold(0.0, (sum, t) => sum + t.amount);
+       totalSpent += spentInMonth;
+    }
+
+    // Monthly Limits
+    for (var limit in _monthlyLimits.where((l) => l.isActive)) {
+       // Avoid double counting if category implies both (though unlikely)
+        if (_weeklyLimits.any((wl) => wl.isActive && wl.categoryId == limit.categoryId)) continue;
+
+       final spentInMonth = expenseProvider.transactions
+           .where((t) => t.categoryId == limit.categoryId && t.type == TransactionType.expense)
+           .fold(0.0, (sum, t) => sum + t.amount);
+       totalSpent += spentInMonth;
+    }
+    
+    return totalSpent;
+  }
+
+  // Calculate limits stats for a specific historical month
+  // Returns { 'quota': double, 'spent': double, 'breakdown': List<Map> }
+  Map<String, dynamic> getLimitsStatsForMonth(int month, int year, ExpenseProvider expenseProvider) {
+    // Approximation: Use CURRENT active limits applied to historical data.
+    double limitsQuota = 0.0;
+    double limitsSpent = 0.0;
+    
+    final List<Map<String, dynamic>> breakdown = [];
+
+    // Monthly Limits
+    final monthlyLimits = _db.getAllMonthlyLimits().where((l) => l.isActive).toList();
+    for (var limit in monthlyLimits) {
+       limitsQuota += limit.limitAmount;
+       final limitSpent = _db.getTransactionsForMonth(month, year)
+         .where((t) => t.categoryId == limit.categoryId && t.type == TransactionType.expense)
+         .fold(0.0, (sum, t) => sum + t.amount);
+       limitsSpent += limitSpent;
+       
+       final category = _db.getCategoryById(limit.categoryId);
+       breakdown.add({
+         'name': category?.name ?? 'Unknown',
+         'spent': limitSpent,
+         'quota': limit.limitAmount,
+         'color': category?.color,
+         'icon': category?.icon,
+       });
+    }
+
+    // Weekly Limits
+    final weeklyLimits = _db.getAllWeeklyLimits().where((l) => l.isActive).toList();
+    // Estimate monthly quota for weekly limits
+    int daysInMonth = DateTime(year, month + 1, 0).day;
+    
+    for (var limit in weeklyLimits) {
+      if (monthlyLimits.any((ml) => ml.categoryId == limit.categoryId)) continue; 
+      
+      final monthlyEquivalent = (limit.limitAmount / 7.0) * daysInMonth;
+      limitsQuota += monthlyEquivalent;
+      
+      final limitSpent = _db.getTransactionsForMonth(month, year)
+         .where((t) => t.categoryId == limit.categoryId && t.type == TransactionType.expense)
+         .fold(0.0, (sum, t) => sum + t.amount);
+      limitsSpent += limitSpent;
+
+      final category = _db.getCategoryById(limit.categoryId);
+      breakdown.add({
+         'name': category?.name ?? 'Unknown',
+         'spent': limitSpent,
+         'quota': monthlyEquivalent,
+         'color': category?.color,
+         'icon': category?.icon,
+      });
+    }
+    
+    return {
+      'quota': limitsQuota,
+      'spent': limitsSpent,
+      'breakdown': breakdown,
+    };
   }
 
   // Get breakdown of reserved amounts per category
@@ -394,11 +569,11 @@ class BudgetProvider extends ChangeNotifier {
   }
 
   // Get budget status
-  BudgetStatus getBudgetStatus(double todayExpense) {
+  BudgetStatus getBudgetStatus(double todayExpense, ExpenseProvider expenseProvider) {
     if (_currentBudget == null) return BudgetStatus.neutral;
-    final currentBalance = getCurrentBalance();
+    final effectiveBalance = getEffectiveBalance(expenseProvider);
     return _currentBudget!.getBudgetStatus(
-      currentBalance,
+      effectiveBalance,
       todayExpense,
       fixedExpensesTotal: 0.0,
     );
@@ -408,20 +583,8 @@ class BudgetProvider extends ChangeNotifier {
   Future<void> checkBudgetStatus(ExpenseProvider expenseProvider) async {
     if (_currentBudget == null) return;
     
-    double totalSpent = 0;
-    double totalLimit = 0;
-    
-    for (var limit in _weeklyLimits.where((l) => l.isActive && l.isCurrentWeek())) {
-       totalLimit += limit.getEffectiveLimit(_currentBudget!.month, _currentBudget!.year);
-       totalSpent += expenseProvider.getWeeklySpendingInMonth(
-         limit.categoryId, 
-         limit.weekStartDate, 
-         _currentBudget!.month, 
-         _currentBudget!.year
-       );
-    }
-    
-    await NotificationService().updateWeeklySummaryContent(totalSpent, totalLimit);
+    // Redirect to the full update logic which handles the 'Widget' (Persistent notification)
+    await updateWeeklyNotification(expenseProvider);
   }
 
   // Get all monthly budgets (for library)
@@ -489,10 +652,31 @@ class BudgetProvider extends ChangeNotifier {
     await _syncCurrentMonthFixed();
     notifyListeners();
   }
+  
+  // Toggle paid status
+  Future<void> toggleFixedExpensePaid(String id) async {
+    if (_currentBudget == null) return;
+    
+    final isPaid = _db.isFixedExpensePaid(id, _currentBudget!.month, _currentBudget!.year);
+    await _db.setFixedExpensePaid(id, _currentBudget!.month, _currentBudget!.year, !isPaid);
+    notifyListeners();
+  }
+
+  // Check paid status
+  bool isFixedExpensePaid(String id) {
+     if (_currentBudget == null) return false;
+     return _db.isFixedExpensePaid(id, _currentBudget!.month, _currentBudget!.year);
+  }
 
   // Get total fixed expenses
   double getTotalFixedExpenses() {
     return _db.getTotalFixedExpensesForMonth();
+  }
+  
+  // Get ONLY unpaid fixed expenses
+  double getUnpaidFixedExpenses() {
+    if (_currentBudget == null) return 0.0;
+    return _db.getUnpaidFixedExpensesTotal(_currentBudget!.month, _currentBudget!.year);
   }
 
   DateTime _getWeekStart(DateTime date) {

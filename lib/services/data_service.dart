@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../utils/custom_toast.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -52,16 +53,12 @@ class DataService {
 
       if (result.status == ShareResultStatus.success) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Резервная копия успешно создана')),
-          );
+          CustomToast.show(context, 'Резервная копия успешно создана');
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка экспорта: $e'), backgroundColor: Colors.red),
-        );
+        CustomToast.show(context, 'Ошибка экспорта: $e', isError: true);
       }
     }
   }
@@ -175,16 +172,12 @@ class DataService {
       }
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Данные успешно восстановлены. Перезапустите приложение для обновления всех экранов.')),
-        );
+        CustomToast.show(context, 'Данные успешно восстановлены. Перезапустите приложение для обновления всех экранов.');
       }
 
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка импорта: $e'), backgroundColor: Colors.red),
-        );
+        CustomToast.show(context, 'Ошибка импорта: $e', isError: true);
       }
     }
   }
@@ -257,9 +250,7 @@ class DataService {
 
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка экспорта CSV: $e'), backgroundColor: Colors.red),
-        );
+        CustomToast.show(context, 'Ошибка экспорта CSV: $e', isError: true);
       }
     }
   }

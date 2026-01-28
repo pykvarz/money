@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../utils/custom_toast.dart';
 import 'package:provider/provider.dart';
 import '../models/transaction_template.dart';
 import '../models/transaction.dart';
 import '../providers/expense_provider.dart';
+import '../providers/budget_provider.dart';
 import '../services/database_helper.dart';
 import 'transaction_template_dialog.dart';
 import 'package:uuid/uuid.dart';
@@ -109,41 +111,20 @@ class _QuickAddWidgetState extends State<QuickAddWidget> {
      
      await expenseProvider.addTransaction(transaction);
      
+     if (context.mounted) {
+       context.read<BudgetProvider>().checkBudgetStatus(expenseProvider);
+     }
+     
      if (mounted) {
-       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(
-           content: Text('Добавлено: ${template.name}'),
-           action: SnackBarAction(
-             label: 'Отмена',
-             onPressed: () async {
-               await expenseProvider.deleteTransaction(transaction.id);
-             },
-           ),
-         ),
-       );
+       CustomToast.show(context, 'Добавлено: ${template.name}');
      }
   }
 
   @override
   Widget build(BuildContext context) {
-    // If no templates, show a small "Add Shortcuts" chip
+    // If no templates, show nothing (managed in Settings now)
     if (_templates.isEmpty) {
-      return SizedBox(
-        height: 60,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          children: [
-             ActionChip(
-               avatar: const Icon(Icons.add_circle_outline, size: 20, color: Colors.blue),
-               label: const Text('Добавить шаблон'),
-               backgroundColor: Colors.blue.withOpacity(0.1),
-               side: BorderSide.none,
-               onPressed: _addTemplate,
-             ),
-          ],
-        ),
-      );
+      return const SizedBox.shrink();
     }
     
     return Column(
@@ -165,17 +146,9 @@ class _QuickAddWidgetState extends State<QuickAddWidget> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _templates.length + 1,
+            itemCount: _templates.length,
             separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
-              if (index == _templates.length) {
-                // Add Button
-                return ActionChip(
-                  avatar: const Icon(Icons.add, size: 20),
-                  label: const Text('Новый'),
-                  onPressed: _addTemplate,
-                );
-              }
               
               final template = _templates[index];
               final category = context.read<ExpenseProvider>().getCategoryById(template.categoryId);

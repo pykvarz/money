@@ -12,7 +12,10 @@ class TransactionDialog extends StatefulWidget {
     super.key,
     required this.categories,
     this.transaction,
+    this.initialCategoryId,
   });
+
+  final String? initialCategoryId;
 
   @override
   State<TransactionDialog> createState() => _TransactionDialogState();
@@ -28,6 +31,8 @@ class _TransactionDialogState extends State<TransactionDialog> {
   late String _selectedCategoryId;
   late DateTime _selectedDate;
 
+  bool get _isQuickAdd => widget.initialCategoryId != null;
+
   @override
   void initState() {
     super.initState();
@@ -41,16 +46,28 @@ class _TransactionDialogState extends State<TransactionDialog> {
       _noteController.text = widget.transaction!.note ?? '';
     } else {
       // New transaction
-      _type = TransactionType.expense;
       _selectedDate = DateTime.now();
-      
-      // Find first category of expense type
-      final expenseCategories = widget.categories
-          .where((c) => c.type == CategoryType.expense)
-          .toList();
-      _selectedCategoryId = expenseCategories.isNotEmpty
-          ? expenseCategories.first.id
-          : widget.categories.first.id;
+
+      if (widget.initialCategoryId != null) {
+        // Pre-select category and type
+        final category = widget.categories.firstWhere(
+          (c) => c.id == widget.initialCategoryId,
+          orElse: () => widget.categories.first,
+        );
+        _type = category.type == CategoryType.expense 
+            ? TransactionType.expense 
+            : TransactionType.income;
+        _selectedCategoryId = category.id;
+      } else {
+        _type = TransactionType.expense;
+        // Find first category of expense type
+        final expenseCategories = widget.categories
+            .where((c) => c.type == CategoryType.expense)
+            .toList();
+        _selectedCategoryId = expenseCategories.isNotEmpty
+            ? expenseCategories.first.id
+            : widget.categories.first.id;
+      }
     }
   }
 
@@ -77,7 +94,7 @@ class _TransactionDialogState extends State<TransactionDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isEdit ? 'Редактировать' : 'Добавить транзакцию',
+                  isEdit ? 'Редактировать' : (_isQuickAdd ? 'Быстрая запись' : 'Добавить транзакцию'),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -85,36 +102,39 @@ class _TransactionDialogState extends State<TransactionDialog> {
                 const SizedBox(height: 20),
 
                 // Type selector
-                Text('Тип', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 8),
-                SegmentedButton<TransactionType>(
-                  segments: const [
-                    ButtonSegment(
-                      value: TransactionType.expense,
-                      label: Text('Расход'),
-                      icon: Icon(Icons.arrow_upward),
-                    ),
-                    ButtonSegment(
-                      value: TransactionType.income,
-                      label: Text('Доход'),
-                      icon: Icon(Icons.arrow_downward),
-                    ),
-                  ],
-                  selected: {_type},
-                  onSelectionChanged: (Set<TransactionType> newSelection) {
-                    setState(() {
-                      _type = newSelection.first;
-                      // Update category selection based on type
-                      _updateCategoryForType();
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
+                if (!_isQuickAdd) ...[
+                  Text('Тип', style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  SegmentedButton<TransactionType>(
+                    segments: const [
+                      ButtonSegment(
+                        value: TransactionType.expense,
+                        label: Text('Расход'),
+                        icon: Icon(Icons.arrow_upward),
+                      ),
+                      ButtonSegment(
+                        value: TransactionType.income,
+                        label: Text('Доход'),
+                        icon: Icon(Icons.arrow_downward),
+                      ),
+                    ],
+                    selected: {_type},
+                    onSelectionChanged: (Set<TransactionType> newSelection) {
+                      setState(() {
+                        _type = newSelection.first;
+                        // Update category selection based on type
+                        _updateCategoryForType();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // Amount field
                 TextFormField(
                   controller: _amountController,
                   keyboardType: TextInputType.number,
+                  autofocus: _isQuickAdd, // Auto-focus in quick add mode
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                   ],
@@ -124,6 +144,8 @@ class _TransactionDialogState extends State<TransactionDialog> {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.attach_money),
                   ),
+                  textInputAction: _isQuickAdd ? TextInputAction.done : TextInputAction.next,
+                  onFieldSubmitted: _isQuickAdd ? (_) => _save() : null,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Введите сумму';
@@ -137,62 +159,76 @@ class _TransactionDialogState extends State<TransactionDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                // Category dropdown
-                DropdownButtonFormField<String>(
-                  value: _selectedCategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Категория',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  items: _getFilteredCategories()
-                      .map((category) => DropdownMenuItem(
-                            value: category.id,
-                            child: Row(
-                              children: [
-                                Icon(category.icon, color: category.color, size: 20),
-                                const SizedBox(width: 12),
-                                Text(category.name),
-                              ],
-                            ),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedCategoryId = value;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Date picker
-                InkWell(
-                  onTap: _pickDate,
-                  child: InputDecorator(
+                if (!_isQuickAdd) ...[
+                  // Category dropdown
+                  DropdownButtonFormField<String>(
+                    value: _selectedCategoryId,
                     decoration: const InputDecoration(
-                      labelText: 'Дата',
+                      labelText: 'Категория',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.calendar_today),
+                      prefixIcon: Icon(Icons.category),
                     ),
-                    child: Text(
-                      '${_selectedDate.day}.${_selectedDate.month}.${_selectedDate.year}',
-                    ),
+                    items: _getFilteredCategories()
+                        .map((category) => DropdownMenuItem(
+                              value: category.id,
+                              child: Row(
+                                children: [
+                                  Icon(category.icon, color: category.color, size: 20),
+                                  const SizedBox(width: 12),
+                                  Text(category.name),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedCategoryId = value;
+                        });
+                      }
+                    },
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Note field
-                TextFormField(
-                  controller: _noteController,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: 'Заметка (необязательно)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.note),
+                  // Date picker
+                  InkWell(
+                    onTap: _pickDate,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Дата',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.calendar_today),
+                      ),
+                      child: Text(
+                        '${_selectedDate.day}.${_selectedDate.month}.${_selectedDate.year}',
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+
+                  // Note field
+                  TextFormField(
+                    controller: _noteController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Заметка (необязательно)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.note),
+                    ),
+                  ),
+                ],
+                if (_isQuickAdd) ...[
+                   // Show selected category as info
+                   Row(
+                     children: [
+                       const Text('Категория: ', style: TextStyle(color: Colors.grey)),
+                       Builder(builder: (context) {
+                          final cat = widget.categories.firstWhere((c) => c.id == _selectedCategoryId);
+                          return Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold));
+                       }),
+                     ],
+                   ),
+                ],
                 const SizedBox(height: 24),
 
                 // Buttons

@@ -5,6 +5,12 @@ import 'library_screen.dart';
 import 'settings_screen.dart';
 import 'savings_screen.dart';
 
+import 'package:provider/provider.dart';
+import '../providers/expense_provider.dart';
+import '../providers/budget_provider.dart';
+
+import '../services/notification_service.dart';
+
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -12,7 +18,7 @@ class MainNavigationScreen extends StatefulWidget {
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
@@ -21,6 +27,32 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     AnalyticsScreen(),
     LibraryScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Check if app was launched via notification (cold start)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       NotificationService().checkInitialLaunch();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Reload data when app comes to foreground (e.g. after adding txn via widget)
+      context.read<ExpenseProvider>().loadData();
+      context.read<BudgetProvider>().loadCurrentBudget();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

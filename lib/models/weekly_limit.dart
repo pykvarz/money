@@ -19,12 +19,16 @@ class WeeklyLimit extends HiveObject {
   @HiveField(4)
   late bool isActive;
 
+  @HiveField(5, defaultValue: true)
+  late bool showInNotification;
+
   WeeklyLimit({
     required this.id,
     required this.categoryId,
     required this.limitAmount,
     required this.weekStartDate,
     this.isActive = true,
+    this.showInNotification = true,
   });
 
   // Check if this limit is for the current week
@@ -103,6 +107,7 @@ class WeeklyLimit extends HiveObject {
       'limitAmount': limitAmount,
       'weekStartDate': weekStartDate.toIso8601String(),
       'isActive': isActive,
+      'showInNotification': showInNotification,
     };
   }
 
@@ -113,6 +118,7 @@ class WeeklyLimit extends HiveObject {
       limitAmount: json['limitAmount'],
       weekStartDate: DateTime.parse(json['weekStartDate']),
       isActive: json['isActive'] ?? true,
+      showInNotification: json['showInNotification'] ?? true,
     );
   }
 }

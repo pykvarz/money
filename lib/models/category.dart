@@ -101,6 +101,14 @@ class Category extends HiveObject {
         type: CategoryType.expense,
         isCustom: false,
       ),
+      Category(
+        id: 'cat_supermarket',
+        name: 'Супермаркет',
+        iconCodePoint: Icons.shopping_cart.codePoint,
+        colorValue: Colors.green.value,
+        type: CategoryType.expense,
+        isCustom: false,
+      ),
       // Income category
       Category(
         id: 'cat_salary',

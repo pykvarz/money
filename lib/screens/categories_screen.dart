@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../utils/custom_toast.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../models/category.dart';
 import '../widgets/category_dialog.dart';
+import '../services/widget_service.dart';
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -85,9 +87,7 @@ class CategoriesScreen extends StatelessWidget {
           confirmDismiss: (_) => _confirmDelete(context, category),
           onDismissed: (_) {
             provider.deleteCategory(category.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Категория "${category.name}" удалена')),
-            );
+            CustomToast.show(context, 'Категория "${category.name}" удалена');
           },
           child: ListTile(
             leading: CircleAvatar(
@@ -95,7 +95,36 @@ class CategoriesScreen extends StatelessWidget {
               child: Icon(category.icon, color: category.color),
             ),
             title: Text(category.name),
-            trailing: const Icon(Icons.edit, size: 20, color: Colors.grey),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
+                  onPressed: () => _openCategoryDialog(context, category: category),
+                  tooltip: 'Редактировать',
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                  onSelected: (value) {
+                    if (value == 'widget') {
+                      _setAsWidget(context, category);
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'widget',
+                      child: Row(
+                        children: [
+                          Icon(Icons.widgets, size: 20, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('Создать виджет'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
             onTap: () => _openCategoryDialog(context, category: category),
           ),
         );
@@ -147,5 +176,8 @@ class CategoriesScreen extends StatelessWidget {
         await provider.addCategory(result);
       }
     }
+  }
+  Future<void> _setAsWidget(BuildContext context, Category category) async {
+    await WidgetService.updateCategoryWidget(category, context);
   }
 }

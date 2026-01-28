@@ -6,6 +6,7 @@ import '../providers/expense_provider.dart';
 import 'settings_screen.dart';
 import '../services/database_helper.dart';
 import '../utils/currency_formatter.dart';
+import '../widgets/month_summary_card.dart'; // Import
 
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
@@ -190,69 +191,8 @@ class MonthBudgetCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
-              const Divider(),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatColumn(
-                    'Доходы',
-                    CurrencyFormatter.formatCompact(totalIncome),
-                    Colors.green,
-                    Icons.arrow_upward,
-                  ),
-                  _buildStatColumn(
-                    'Расходы',
-                    CurrencyFormatter.formatCompact(totalExpense),
-                    Colors.red,
-                    Icons.arrow_downward,
-                  ),
-                  _buildStatColumn(
-                    'Баланс',
-                    CurrencyFormatter.formatCompact(balance),
-                    Colors.blue,
-                    Icons.account_balance_wallet,
-                  ),
-                ],
-              ),
-              if (budget.targetRemainingBalance != null) ...[
-                const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Цель достигнута:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Icon(
-                          gap >= 0 ? Icons.check_circle : Icons.cancel,
-                          color: gap >= 0 ? Colors.green : Colors.red,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          gap >= 0
-                              ? '+${CurrencyFormatter.formatKZT(gap)}'
-                              : CurrencyFormatter.formatKZT(gap),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: gap >= 0 ? Colors.green : Colors.red,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+
+              // Removed stats and goal rows as per user request
             ],
           ),
         ),
@@ -308,38 +248,26 @@ class MonthDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // Summary Card
-          Card(
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Сводка месяца',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSummaryRow('Начальный баланс', budget.initialBalance, Colors.grey),
-                  const SizedBox(height: 8),
-                  _buildSummaryRow('Доходы', totalIncome, Colors.green),
-                  const SizedBox(height: 8),
-                  _buildSummaryRow('Расходы', totalExpense, Colors.red),
-                  const Divider(height: 24),
-                  _buildSummaryRow('Итоговый баланс', balance, Colors.blue),
-                  if (budget.targetRemainingBalance != null) ...[
-                    const SizedBox(height: 8),
-                    _buildSummaryRow(
-                      'Цель',
-                      budget.targetRemainingBalance!,
-                      Colors.deepPurple,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          // Summary Card
+          Consumer2<ExpenseProvider, BudgetProvider>(
+            builder: (context, expenseProvider, budgetProvider, _) {
+              final limitsStats = budgetProvider.getLimitsStatsForMonth(budget.month, budget.year, expenseProvider);
+              final limitsQuota = limitsStats['quota'] as double;
+              final limitsSpent = limitsStats['spent'] as double;
+              final breakdown = limitsStats['breakdown'] as List<Map<String, dynamic>>?;
+              
+              return MonthSummaryCard(
+                income: totalIncome,
+                expense: totalExpense,
+                balance: balance,
+                daysLeft: 0, // Past month
+                fixedExpenses: budget.projectedFixedExpenses,
+                target: budget.targetRemainingBalance ?? 0.0,
+                limitsQuota: limitsQuota,
+                limitsSpent: limitsSpent,
+                limitsPerformanceBreakdown: breakdown,
+              );
+            },
           ),
           const SizedBox(height: 16),
 
