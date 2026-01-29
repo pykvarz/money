@@ -61,7 +61,7 @@ class LibraryScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Нет сохраненных месяцев',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -207,7 +207,7 @@ class MonthBudgetCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 12, color: Colors.grey[400]),
         ),
         const SizedBox(height: 2),
         Text(

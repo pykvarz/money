@@ -155,6 +155,39 @@ class NotificationParserService {
     }
   }
 
+  static Future<List<String>> getCustomBanks() async {
+    try {
+      final result = await platform.invokeMethod('getCustomBanks');
+      if (result == null || result.isEmpty) {
+        return [];
+      }
+      return List<String>.from(result.split(','));
+    } catch (e) {
+      print('Error getting custom banks: $e');
+      return [];
+    }
+  }
+
+  static Future<void> addCustomBank(String packageName) async {
+    try {
+      await platform.invokeMethod('addCustomBank', {
+        'packageName': packageName,
+      });
+    } catch (e) {
+      print('Error adding custom bank: $e');
+    }
+  }
+
+  static Future<void> removeCustomBank(String packageName) async {
+    try {
+      await platform.invokeMethod('removeCustomBank', {
+        'packageName': packageName,
+      });
+    } catch (e) {
+      print('Error removing custom bank: $e');
+    }
+  }
+
   static Future<void> openNotificationSettings() async {
     try {
       await platform.invokeMethod('openNotificationSettings');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/monthly_budget.dart';
 import '../utils/currency_formatter.dart';
+import '../theme/gradients.dart';
 
 class SafeDailyBudgetCard extends StatelessWidget {
   final MonthlyBudget? budget;
@@ -58,6 +59,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
 
   Widget _buildNoTargetCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Card(
       key: const ValueKey('no_target_card'),
@@ -74,6 +76,12 @@ class SafeDailyBudgetCard extends StatelessWidget {
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withOpacity(0.1) 
+                : Colors.black.withOpacity(0.05),
+            width: 1,
           ),
         ),
         child: Column(
@@ -116,51 +124,47 @@ class SafeDailyBudgetCard extends StatelessWidget {
     required BudgetStatus status,
     required double target,
   }) {
-    final colors = _getStatusColors(context, status); // Pass context
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Card(
       key: key,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 6,
+      shadowColor: Colors.black.withOpacity(0.2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [colors['bg']!, colors['bgLight']!],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          borderRadius: BorderRadius.circular(20),
+          gradient: AppGradients.purpleBlue,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             // Total Disposable amount
             Center(
               child: Column(
                 children: [
                   Text(
                     CurrencyFormatter.formatKZTWithDecimals(mainValue),
-                    style: TextStyle(
-                      fontSize: 36,
+                    style: const TextStyle(
+                      fontSize: 40,
                       fontWeight: FontWeight.bold,
-                      color: colors['text'],
+                      color: Colors.white,
+                      letterSpacing: -1,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     'доступно до конца месяца',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: colors['text']!.withOpacity(0.8),
+                      fontSize: 15,
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             // Details
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -168,20 +172,21 @@ class SafeDailyBudgetCard extends StatelessWidget {
                 _buildDetailItem(
                   'Баланс',
                   CurrencyFormatter.formatKZT(currentBalance),
-                  colors['text']!,
+                  Colors.white,
                 ),
                 Container(
                   width: 1,
-                  height: 30,
-                  color: colors['text']!.withOpacity(0.3),
+                  height: 40,
+                  color: Colors.white.withOpacity(0.3),
                 ),
                 _buildDetailItem(
                   'Цель',
                   CurrencyFormatter.formatKZT(target),
-                  colors['text']!,
+                  Colors.white,
                 ),
               ],
             ),
+            const SizedBox(height: 4),
           ],
         ),
       ),

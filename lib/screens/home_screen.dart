@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             'Нет транзакций',
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -290,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             'Нажмите + чтобы добавить',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[500],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
                             ),
                           ),
                         ],

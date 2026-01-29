@@ -60,7 +60,7 @@ class BudgetLimitCard extends StatelessWidget {
                         '${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

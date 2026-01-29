@@ -318,15 +318,33 @@ class BudgetProvider extends ChangeNotifier {
 
   // Delete weekly limit
   Future<void> deleteWeeklyLimit(String id, ExpenseProvider expenseProvider) async {
+    // Get the limit to find its categoryId before deletion
+    final limit = _db.getWeeklyLimitById(id);
+    
     await _db.deleteWeeklyLimit(id);
     await loadWeeklyLimits();
+    
+    // Cancel the notification for this category
+    if (limit != null) {
+      await NotificationService().cancelLimitNotification(limit.categoryId);
+    }
+    
     await updateWeeklyNotification(expenseProvider);
   }
 
   // Delete monthly limit
   Future<void> deleteMonthlyLimit(String id, ExpenseProvider expenseProvider) async {
+    // Get the limit to find its categoryId before deletion
+    final limit = _db.getMonthlyLimitById(id);
+    
     await _db.deleteMonthlyLimit(id);
     await loadMonthlyLimits();
+    
+    // Cancel the notification for this category
+    if (limit != null) {
+      await NotificationService().cancelLimitNotification(limit.categoryId);
+    }
+    
     await updateWeeklyNotification(expenseProvider);
   }
 
@@ -370,12 +388,34 @@ class BudgetProvider extends ChangeNotifier {
     return baseBalance - fixedDeduction;
   }
 
-  // Calculate effective balance (Actual - Reserved Limits - Unpaid Fixed)
+  // Calculate effective balance (Initial Balance - Fixed Expenses - Limits Quota - Unlim Spending)
+  // Формула учитывает: начальный баланс - обязательные расходы - квота лимитов - траты по категориям без лимитов
   double getEffectiveBalance(ExpenseProvider expenseProvider) {
-    final actualBalance = getCurrentBalance();
-    final reserved = getTotalReservedLimits(expenseProvider);
-    final unpaidFixed = getUnpaidFixedExpenses();
-    return actualBalance - reserved - unpaidFixed;
+    if (_currentBudget == null) return 0.0;
+    
+    final initialBalance = _currentBudget!.initialBalance;
+    final fixedExpenses = getTotalFixedExpenses();
+    final limitsQuota = getTotalLimitsQuota();
+    
+    // Получаем ID категорий, на которые установлены лимиты
+    final categoriesWithLimits = <String>{};
+    for (var limit in _weeklyLimits.where((l) => l.isActive)) {
+      categoriesWithLimits.add(limit.categoryId);
+    }
+    for (var limit in _monthlyLimits.where((l) => l.isActive)) {
+      categoriesWithLimits.add(limit.categoryId);
+    }
+    
+    // Считаем траты по категориям БЕЗ лимитов (в текущем месяце)
+    final unlimitedSpending = expenseProvider.transactions
+        .where((t) => 
+            t.type == TransactionType.expense &&
+            !categoriesWithLimits.contains(t.categoryId) &&
+            t.date.month == _currentBudget!.month &&
+            t.date.year == _currentBudget!.year)
+        .fold(0.0, (sum, t) => sum + t.amount);
+    
+    return initialBalance - fixedExpenses - limitsQuota - unlimitedSpending;
   }
 
   // Calculate safe daily budget

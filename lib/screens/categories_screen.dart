@@ -63,7 +63,7 @@ class CategoriesScreen extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Нет категорий',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),

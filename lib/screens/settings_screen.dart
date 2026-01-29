@@ -31,461 +31,498 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Настройки'),
+        title: const Text('Settings'),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: Consumer<BudgetProvider>(
         builder: (context, budgetProvider, _) {
           final budget = budgetProvider.currentBudget;
+          final expenseProvider = context.watch<ExpenseProvider>();
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             children: [
-              // Target Balance Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.flag, color: Colors.deepPurple),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Целевой баланс',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (budget?.targetRemainingBalance != null)
-                        Column(
-                          key: const ValueKey('settings_target_set'),
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Текущая цель:',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                                Text(
-                                  CurrencyFormatter.formatKZT(
-                                    budget!.targetRemainingBalance!,
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.deepPurple,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Безопасный дневной бюджет:',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                Text(
-                                  CurrencyFormatter.formatKZTWithDecimals(
-                                    budgetProvider.getSmartSafeDailyBudget(context.read<ExpenseProvider>()),
-                                  ),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.green,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        )
-                      else
-                        Padding(
-                          key: const ValueKey('settings_target_unset'),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(
-                            'Цель не установлена',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ),
-                      FilledButton.icon(
-                        onPressed: () => _showSetTargetDialog(context, budgetProvider),
-                        icon: const Icon(Icons.edit),
-                        label: Text(
-                          budget?.targetRemainingBalance != null
-                              ? 'Изменить цель'
-                              : 'Установить цель',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _buildSectionHeader('FINANCIAL GOALS'),
+              _buildGoalCard(
+                context,
+                title: 'Target Balance',
+                amount: budget?.targetRemainingBalance,
+                amountColor: const Color(0xFF6366F1), // Indigo
+                icon: Icons.flag,
+                iconColor: const Color(0xFF6366F1),
+                iconBgColor: const Color(0xFFE0E7FF),
+                onTap: () => _showSetTargetDialog(context, budgetProvider),
+                secondaryLabel: 'Safe Daily Budget',
+                secondaryAmount: budgetProvider.getSmartSafeDailyBudget(expenseProvider),
+                secondaryColor: const Color(0xFF10B981), // Green
+                buttonText: 'Change Goal',
               ),
               const SizedBox(height: 16),
-
-              // Initial Balance Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.account_balance_wallet, color: Colors.blue),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Начальный баланс',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Баланс на начало месяца:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                          Text(
-                            CurrencyFormatter.formatKZT(
-                              budget?.initialBalance ?? 0,
-                            ),
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () =>
-                            _showSetInitialBalanceDialog(context, budgetProvider),
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Изменить начальный баланс'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Categories Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: const Icon(Icons.category, color: Colors.purple),
-                  title: const Text('Категории'),
-                  subtitle: const Text('Управление категориями расходов и доходов'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CategoriesScreen()),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Templates Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: const Icon(Icons.bookmark, color: Colors.blue),
-                  title: const Text('Шаблоны'),
-                  subtitle: const Text('Управление шаблонами транзакций'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TemplatesScreen()),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Limits Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: const Icon(Icons.speed, color: Colors.orange),
-                  title: const Text('Лимиты трат'),
-                  subtitle: const Text('Недельные и месячные лимиты'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LimitsScreen()),
-                  ),
-                ),
+              _buildGoalCard(
+                context,
+                title: 'Starting Balance',
+                amount: budget?.initialBalance,
+                amountColor: const Color(0xFF3B82F6), // Blue
+                icon: Icons.account_balance_wallet,
+                iconColor: const Color(0xFF3B82F6),
+                iconBgColor: const Color(0xFFDBEAFE),
+                onTap: () => _showSetInitialBalanceDialog(context, budgetProvider),
+                secondaryLabel: 'Balance at start of month:',
+                secondaryAmount: budget?.initialBalance ?? 0, // Show same amount as secondary desc
+                secondaryColor: const Color(0xFF3B82F6),
+                buttonText: 'Change Starting Balance',
+                isSimple: true, // Special layout for starting balance if needed, or reuse
               ),
 
-              const SizedBox(height: 16),
-
-              // Fixed Expenses Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Icon(Icons.receipt_long, color: Colors.red.shade700),
-                  title: const Text('Обязательные расходы'),
-                  subtitle: const Text('Регулярные платежи (аренда, подписки)'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FixedExpensesScreen()),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Notification Autoparsing Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Icon(Icons.notifications_active, color: Colors.amber.shade700),
-                  title: const Text('Автопарсинг уведомлений'),
-                  subtitle: const Text('Евразийский банк, Kaspi'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Appearance Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Consumer<ThemeProvider>(
-                  builder: (context, themeProvider, _) {
-                    return ListTile(
-                      leading: const Icon(Icons.brightness_6, color: Colors.indigo),
-                      title: const Text('Тема оформления'),
-                      subtitle: Text(themeProvider.themeName),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _showThemeDialog(context, themeProvider),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Notifications Card
-              
-              // Notifications Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.notifications, color: Colors.amber),
-                      title: const Text('Уведомления'),
-                      subtitle: const Text('Настройка времени напоминаний'),
-                    ),
-                    const Divider(height: 1),
-                    FutureBuilder<TimeOfDay>(
-                      future: _getDailyReminderTime(),
-                      builder: (context, snapshot) {
-                        final time = snapshot.data ?? const TimeOfDay(hour: 21, minute: 0);
-                        return ListTile(
-                          title: const Text('Ежедневное напоминание'),
-                          subtitle: Text('${time.hour}:${time.minute.toString().padLeft(2, '0')}'),
-                          trailing: const Icon(Icons.edit, size: 20),
-                          onTap: () => _pickDailyReminderTime(context),
-                        );
-                      }
-                    ),
-                    const Divider(height: 1),
-                    FutureBuilder<TimeOfDay>(
-                      future: _getWeeklyReminderTime(),
-                      builder: (context, snapshot) {
-                        final time = snapshot.data ?? const TimeOfDay(hour: 20, minute: 0);
-                        return ListTile(
-                          title: const Text('Итоги недели (Вс)'),
-                          subtitle: Text('${time.hour}:${time.minute.toString().padLeft(2, '0')}'),
-                          trailing: const Icon(Icons.edit, size: 20),
-                          onTap: () => _pickWeeklyReminderTime(context),
-                        );
-                      }
-                    ),
-
-
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Backup & Reset Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.cloud_download, color: Colors.teal),
-                      title: const Text('Резервная копия'),
-                      subtitle: const Text('Сохранить или восстановить данные'),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.upload_file),
-                      title: const Text('Экспорт данных'),
-                      subtitle: const Text('Сохранить в файл'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () async {
-                         await DataService().exportData(context);
-                      },
-                    ),
-                    const Divider(height: 1),
-
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.file_download),
-                      title: const Text('Импорт данных'),
-                      subtitle: const Text('Восстановить из файла'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () async {
-                         await DataService().importData(context);
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.table_chart_outlined, color: Colors.green),
-                      title: const Text('Экспорт в Excel (CSV)'),
-                      subtitle: const Text('Скачать историю транзакций'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () async {
-                         await DataService().exportTransactionsToCsv(context);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Info Card
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                color: Colors.blue[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.blue[700]),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Установите целевой баланс для активации умного планирования бюджета',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.blue[900],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               const SizedBox(height: 24),
+              _buildSectionHeader('CATEGORIES & TEMPLATES'),
+              _buildSettingsGroup(
+                context,
+                children: [
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.category,
+                    iconColor: const Color(0xFFA855F7), // Purple
+                    iconBgColor: const Color(0xFFF3E8FF),
+                    title: 'Categories',
+                    subtitle: 'Manage income & expense categories',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+                    ),
+                  ),
+                  _buildDivider(),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.bookmark,
+                    iconColor: const Color(0xFF0EA5E9), // Light Blue
+                    iconBgColor: const Color(0xFFE0F2FE),
+                    title: 'Templates',
+                    subtitle: 'Manage transaction templates',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TemplatesScreen()),
+                    ),
+                  ),
+                  _buildDivider(),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.speed,
+                    iconColor: const Color(0xFFF97316), // Orange
+                    iconBgColor: const Color(0xFFFFEDD5),
+                    title: 'Spending Limits',
+                    subtitle: 'Weekly and monthly budget limits',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LimitsScreen()),
+                    ),
+                  ),
+                  _buildDivider(),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.receipt_long,
+                    iconColor: const Color(0xFFEF4444), // Red
+                    iconBgColor: const Color(0xFFFEE2E2),
+                    title: 'Regular Expenses',
+                    subtitle: 'Rent, subscriptions, fixed bills',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FixedExpensesScreen()),
+                    ),
+                  ),
+                  _buildDivider(),
+                   _buildSettingsTile(
+                    context,
+                    icon: Icons.notifications_active, // AUTO PARSING
+                    iconColor: const Color(0xFFD97706), // Amber
+                    iconBgColor: const Color(0xFFFEF3C7),
+                    title: 'Bank Notifications',
+                    subtitle: 'Auto-parsing transactions',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
+                    ),
+                  ),
+                ],
+              ),
 
-              // App Info
+              const SizedBox(height: 24),
+              _buildSectionHeader('SYSTEM'),
+              _buildSettingsGroup(
+                context,
+                children: [
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, _) {
+                      return _buildSettingsTile(
+                        context,
+                        icon: Icons.dark_mode,
+                        iconColor: const Color(0xFF6366F1), // Indigo
+                        iconBgColor: const Color(0xFFE0E7FF),
+                        title: 'Appearance',
+                        subtitle: themeProvider.themeName,
+                        onTap: () => _showThemeDialog(context, themeProvider),
+                      );
+                    },
+                  ),
+                  // Notifications Sub-section (integrated directly or separate?)
+                  // The mock shows Notifications as a header inside the card, then items.
+                  // Let's implement it as expandable or just flat items.
+                  _buildDivider(),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.notifications,
+                    iconColor: const Color(0xFFEAB308), // Yellow
+                    iconBgColor: const Color(0xFFFEF9C3),
+                    title: 'Notifications',
+                    subtitle: 'Reminder schedules',
+                    onTap: null, // Just a header-like item
+                  ),
+                   // Custom embedded items for times
+                   Padding(
+                     padding: const EdgeInsets.only(left: 60, right: 16, bottom: 8), // Indent to align with text
+                     child: Column(
+                       children: [
+                         FutureBuilder<TimeOfDay>(
+                            future: _getDailyReminderTime(),
+                            builder: (context, snapshot) {
+                              final time = snapshot.data ?? const TimeOfDay(hour: 21, minute: 0);
+                              return _buildTimeRow(
+                                context, 
+                                'Daily Reminder', 
+                                '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
+                                () => _pickDailyReminderTime(context)
+                              );
+                            }
+                          ),
+                          const SizedBox(height: 12),
+                          FutureBuilder<TimeOfDay>(
+                            future: _getWeeklyReminderTime(),
+                            builder: (context, snapshot) {
+                              final time = snapshot.data ?? const TimeOfDay(hour: 20, minute: 0);
+                              return _buildTimeRow(
+                                context, 
+                                'Weekly Summary (Sun)', 
+                                '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
+                                () => _pickWeeklyReminderTime(context)
+                              );
+                            }
+                          ),
+                       ],
+                     ),
+                   ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+              _buildSectionHeader('DATA MANAGEMENT'),
+               _buildSettingsGroup(
+                context,
+                children: [
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.cloud_download,
+                    iconColor: const Color(0xFF10B981), // Teal/Green
+                    iconBgColor: const Color(0xFFD1FAE5),
+                    title: 'Backup',
+                    subtitle: 'Save or restore your data',
+                    onTap: null, // Just header
+                  ),
+                   _buildDivider(),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.upload_file,
+                    iconColor: const Color(0xFF4B5563), // Grey
+                    iconBgColor: const Color(0xFFF3F4F6),
+                    title: 'Export Data',
+                    subtitle: 'Save to internal file',
+                    onTap: () async => await DataService().exportData(context),
+                  ),
+                  _buildDivider(),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.table_chart,
+                    iconColor: const Color(0xFF10B981), // Green
+                    iconBgColor: const Color(0xFFD1FAE5),
+                    title: 'Export to Excel (CSV)',
+                    subtitle: 'Download transaction history',
+                    onTap: () async => await DataService().exportTransactionsToCsv(context),
+                  ),
+                  _buildDivider(),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.refresh,
+                    iconColor: const Color(0xFFEF4444), // Red
+                    iconBgColor: const Color(0xFFFEE2E2),
+                    title: 'Reset Categories',
+                    subtitle: 'Restore default icons and colors',
+                    onTap: () => _resetDefaultCategories(context),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 32),
+              // Version Info
               Center(
-                child: Column(
-                  children: [
-                    Text(
-                      'ExpenseBook',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Версия 1.0.0',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      CurrencyFormatter.formatMonthYear(
-                        budget?.month ?? DateTime.now().month,
-                        budget?.year ?? DateTime.now().year,
-                      ),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'ExpenseBook v1.0.0',
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
+              const SizedBox(height: 32),
             ],
           );
         },
       ),
+    );
+  }
+
+  // UI Helper Methods
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
+          color: Color(0xFF64748B), // Slate 500
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoalCard(
+    BuildContext context, {
+    required String title,
+    required double? amount,
+    required Color amountColor,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor, // Light shade of icon color
+    required VoidCallback onTap,
+    required String secondaryLabel,
+    required double secondaryAmount,
+    required Color secondaryColor,
+    required String buttonText,
+    bool isSimple = false,
+  }) {
+    // For Starting Balance, we might want a simpler layout based on the design
+    // But adapting "Financial Goals" style for both is cleaner.
+    
+    return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.05),
+      color: Theme.of(context).cardTheme.color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // Stats Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isSimple ? 'Balance at start of month:' : 'Current Goal',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey[600],
+                  ),
+                ),
+                Text(
+                  amount != null ? CurrencyFormatter.formatKZT(amount) : 'Not Set',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: amountColor,
+                  ),
+                ),
+              ],
+            ),
+            
+            if (!isSimple) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    secondaryLabel,
+                    style: TextStyle(
+                      fontSize: 14,
+                       color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    CurrencyFormatter.formatKZTWithDecimals(secondaryAmount),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: secondaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onTap,
+                icon: const Icon(Icons.edit, size: 16),
+                label: Text(buttonText),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1), // Indigo button
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsGroup(BuildContext context, {required List<Widget> children}) {
+    return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.05),
+      color: Theme.of(context).cardTheme.color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    required String title,
+    required String subtitle,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24), // Matches card radius
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty)
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey[500],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 64, // Align with text start (16 padding + 42 icon width + 16 gap)
+      endIndent: 0,
+      color: Colors.grey.withOpacity(0.1),
+    );
+  }
+
+  Widget _buildTimeRow(BuildContext context, String title, String time, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+       child: Padding(
+         padding: const EdgeInsets.symmetric(vertical: 8),
+         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            Row(
+              children: [
+                Text(
+                  time,
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.edit, size: 14, color: Colors.blue),
+              ],
+            ),
+          ],
+             ),
+       ),
     );
   }
 
@@ -507,7 +544,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Text(
               'Укажите сумму, которую хотите сохранить к концу месяца',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -759,6 +796,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _resetDefaultCategories(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Сбросить категории?'),
+        content: const Text(
+          'Это восстановит все стандартные категории (Food, Transport и т.д.) '
+          'к оригинальным иконкам и цветам.\n\n'
+          'Пользовательские категории не пострадают.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange,
+            ),
+            child: const Text('Сбросить'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await DatabaseHelper().resetDefaultCategories();
+        
+        // Reload categories in providers
+        if (context.mounted) {
+          await context.read<ExpenseProvider>().loadCategories();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Категории успешно сброшены'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Ошибка: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/currency_formatter.dart';
+import '../theme/gradients.dart';
+import 'category_icon_circle.dart';
 
 class MonthSummaryCard extends StatelessWidget {
   final double income;
@@ -35,19 +37,31 @@ class MonthSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gap = income - expense;
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      elevation: 6,
+      shadowColor: Colors.black.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: AppGradients.lightBlueAdaptive(context),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withOpacity(0.15) 
+                : Colors.black.withOpacity(0.08),
+            width: 1.5,
+          ),
+        ),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Сводка за месяц',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: isDark ? Colors.white : Colors.black87, // Адаптивный цвет!
                   ),
             ),
             const SizedBox(height: 16),
@@ -137,7 +151,12 @@ class MonthSummaryCard extends StatelessWidget {
                          children: [
                            Row(
                              children: [
-                               Icon(icon, size: 16, color: color),
+                               CategoryIconCircle(
+                                 icon: icon,
+                                 color: color,
+                                 size: 24,
+                                 withGradient: false,
+                               ),
                                const SizedBox(width: 8),
                                Expanded(
                                  child: Text(
@@ -147,11 +166,11 @@ class MonthSummaryCard extends StatelessWidget {
                                ),
                                Text(
                                  '${CurrencyFormatter.formatKZT(spent)} / ${CurrencyFormatter.formatKZT(quota)}',
-                                 style: TextStyle(
-                                   fontSize: 11,
-                                   color: spent > quota ? Colors.red : Colors.grey[700],
-                                   fontWeight: spent > quota ? FontWeight.bold : FontWeight.normal,
-                                 ),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: spent > quota ? Colors.red : (isDark ? Colors.grey[400]! : Colors.grey[700]!),
+                                    fontWeight: spent > quota ? FontWeight.bold : FontWeight.normal,
+                                  ),
                                ),
                              ],
                            ),
@@ -258,11 +277,11 @@ class MonthSummaryCard extends StatelessWidget {
               ),
               if (subtitle != null)
                 Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                   subtitle,
+                   style: TextStyle(
+                     fontSize: 12,
+                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                   ),
                 ),
             ],
           ),

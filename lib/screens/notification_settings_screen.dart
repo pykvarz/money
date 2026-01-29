@@ -19,6 +19,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   bool _kaspiEnabled = false;
   List<NotificationRule> _rules = [];
   List<Category> _categories = [];
+  List<String> _customBanks = [];
 
   @override
   void initState() {
@@ -31,12 +32,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     final kaspi = await NotificationParserService.isBankEnabled('kz.kaspi.mobile');
     final rules = _db.getAllNotificationRules();
     final categories = _db.getCategoriesByType(CategoryType.expense);
+    final customBanks = await NotificationParserService.getCustomBanks();
 
     setState(() {
       _eurasianEnabled = eurasian;
       _kaspiEnabled = kaspi;
       _rules = rules;
       _categories = categories;
+      _customBanks = customBanks;
     });
   }
 
@@ -52,6 +55,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           _buildPermissionCard(),
           const SizedBox(height: 16),
           _buildBankSelectionCard(),
+          const SizedBox(height: 16),
+          _buildCustomBanksCard(),
           const SizedBox(height: 16),
           _buildRulesCard(),
           const SizedBox(height: 16),
@@ -124,6 +129,141 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCustomBanksCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Пользовательские банки',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: _showAddBankDialog,
+                  tooltip: 'Добавить банк',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_customBanks.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('Нет пользовательских банков', style: TextStyle(color: Colors.grey)),
+              )
+            else
+              ..._customBanks.map((packageName) => _buildCustomBankItem(packageName)).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomBankItem(String packageName) {
+    return FutureBuilder<bool>(
+      future: NotificationParserService.isBankEnabled(packageName),
+      builder: (context, snapshot) {
+        final enabled = snapshot.data ?? false;
+        
+        return CheckboxListTile(
+          title: Text(packageName),
+          subtitle: const Text('Пользовательский банк'),
+          value: enabled,
+          onChanged: (value) async {
+            await NotificationParserService.setBankEnabled(packageName, value ?? false);
+            await _loadSettings();
+          },
+          secondary: IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Удалить банк?'),
+                  content: Text('Удалить "$packageName"?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Отмена'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      child: const Text('Удалить'),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (confirmed == true) {
+                await NotificationParserService.removeCustomBank(packageName);
+                await _loadSettings();
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddBankDialog() {
+    String bankName = '';
+    String packageName = '';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Добавить банк'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Название банка',
+                hintText: 'Например: Halyk Bank',
+              ),
+              onChanged: (value) => bankName = value,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Package Name',
+                hintText: 'Например: kz.halykbank.mobile',
+              ),
+              onChanged: (value) => packageName = value,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Чтобы узнать package name, посмотрите логи в Debug Panel',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (packageName.isNotEmpty) {
+                await NotificationParserService.addCustomBank(packageName);
+                Navigator.pop(context);
+                await _loadSettings();
+              }
+            },
+            child: const Text('Добавить'),
+          ),
+        ],
       ),
     );
   }
@@ -270,14 +410,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 TextButton.icon(
                   onPressed: () async {
                     await _db.clearNotificationLogs();
-                    setState(() {});
+                    await _loadSettings(); // Используем _loadSettings вместо setState
                   },
                   icon: const Icon(Icons.delete_sweep),
                   label: const Text('Очистить логи'),
                 ),
                 TextButton.icon(
-                  onPressed: () {
-                    setState(() {});
+                  onPressed: () async {
+                    await _loadSettings(); // Используем _loadSettings вместо setState
                   },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Обновить'),

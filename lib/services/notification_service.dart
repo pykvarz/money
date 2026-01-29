@@ -280,6 +280,13 @@ class NotificationService {
   Future<void> updateWeeklySummaryContent(double spent, double limit) async {
   }
 
+  // Cancel notification for a specific limit/category
+  Future<void> cancelLimitNotification(String categoryId) async {
+    // Generate the same notification ID that was used when creating it
+    final int notificationId = 2000 + (categoryId.hashCode % 10000).abs();
+    await AwesomeNotifications().cancel(notificationId);
+  }
+
   Future<void> cancelAll() async {
     await AwesomeNotifications().cancelAll();
   }

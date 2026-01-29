@@ -41,7 +41,7 @@ class _FixedExpensesScreenState extends State<FixedExpensesScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'Список пуст',
-                        style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -79,7 +79,7 @@ class _FixedExpensesScreenState extends State<FixedExpensesScreen> {
                           'Ежемесячная сумма',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

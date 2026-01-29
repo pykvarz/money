@@ -17,6 +17,7 @@ import 'screens/main_navigation_screen.dart';
 import 'services/notification_service.dart';
 import 'services/database_helper.dart';
 import 'widgets/transaction_dialog.dart';
+import 'theme/app_theme.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -72,16 +73,8 @@ class ExpenseBookApp extends StatelessWidget {
         return MaterialApp(
           title: 'Expense Book',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-            useMaterial3: true,
-          ),
-          darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
-             colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.deepPurple,
-                brightness: Brightness.dark,
-             ),
-          ),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
