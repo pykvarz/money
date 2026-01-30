@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/currency_formatter.dart';
+import '../theme/app_design.dart';
 
 class MonthSummaryCard extends StatelessWidget {
   final double income;
@@ -40,7 +41,7 @@ class MonthSummaryCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDesign.paddingM),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -13,6 +13,7 @@ import 'models/weekly_limit.dart';
 import 'providers/expense_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/theme_provider.dart';
+import 'theme/app_theme.dart';
 import 'screens/main_navigation_screen.dart';
 import 'services/notification_service.dart';
 import 'services/database_helper.dart';
@@ -72,16 +73,8 @@ class ExpenseBookApp extends StatelessWidget {
         return MaterialApp(
           title: 'Expense Book',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-            useMaterial3: true,
-          ),
-          darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
-             colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.deepPurple,
-                brightness: Brightness.dark,
-             ),
-          ),
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
@@ -157,10 +150,7 @@ class QuickAddApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-      ),
+      theme: AppTheme.lightTheme,
       home: QuickAddScreen(initialCategoryId: initialCategoryId),
     );
   }

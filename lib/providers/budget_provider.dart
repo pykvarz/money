@@ -233,7 +233,7 @@ class BudgetProvider extends ChangeNotifier {
       monthlyItems: monthlyItems,
       totalSpent: totalSpent,
       totalLimit: totalCombinedLimit,
-      currency: 'KZT',
+      currency: '₸',
       weekRange: weekRange,
     );
   }
@@ -350,32 +350,23 @@ class BudgetProvider extends ChangeNotifier {
         .fold(0.0, (sum, txn) => sum + txn.amount);
   }
 
-  // Calculate actual current balance (Income - Expense - Fixed)
+  // Calculate actual wallet balance (Initial + Income - Expense)
   double getCurrentBalance() {
     if (_currentBudget == null) return 0.0;
     
-    final baseBalance = _db.getCurrentBalanceForMonth(
+    return _db.getCurrentBalanceForMonth(
       _currentBudget!.month,
       _currentBudget!.year,
       _currentBudget!.initialBalance,
     );
-    
-    double fixedDeduction = 0.0;
-    if (_currentBudget!.isCurrentMonth()) {
-      fixedDeduction = _db.getTotalFixedExpensesForMonth();
-    } else {
-      fixedDeduction = _currentBudget!.projectedFixedExpenses;
-    }
-
-    return baseBalance - fixedDeduction;
   }
 
-  // Calculate effective balance (Actual - Reserved Limits - Unpaid Fixed)
+  // Calculate effective balance (ОСТАТОК = Wallet - Reserved Limits - Unpaid Fixed)
   double getEffectiveBalance(ExpenseProvider expenseProvider) {
-    final actualBalance = getCurrentBalance();
-    final reserved = getTotalReservedLimits(expenseProvider);
+    final walletBalance = getCurrentBalance();
+    final reservedLimits = getTotalReservedLimits(expenseProvider);
     final unpaidFixed = getUnpaidFixedExpenses();
-    return actualBalance - reserved - unpaidFixed;
+    return walletBalance - reservedLimits - unpaidFixed;
   }
 
   // Calculate safe daily budget

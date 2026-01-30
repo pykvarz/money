@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
+import '../utils/haptic_helper.dart';
 
 class TransactionDialog extends StatefulWidget {
   final List<Category> categories;
@@ -60,15 +61,12 @@ class _TransactionDialogState extends State<TransactionDialog> {
         _selectedCategoryId = category.id;
       } else {
         _type = TransactionType.expense;
-        // Find first category of expense type
-        final expenseCategories = widget.categories
-            .where((c) => c.type == CategoryType.expense)
-            .toList();
-        _selectedCategoryId = expenseCategories.isNotEmpty
-            ? expenseCategories.first.id
-            : widget.categories.first.id;
+        // Default category will be set by _updateCategoryForType
+        _selectedCategoryId = ''; // Temporary
       }
     }
+    
+    _updateCategoryForType();
   }
 
   @override
@@ -140,7 +138,7 @@ class _TransactionDialogState extends State<TransactionDialog> {
                   ],
                   decoration: const InputDecoration(
                     labelText: 'Сумма',
-                    suffixText: 'KZT',
+                    suffixText: '₸',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.attach_money),
                   ),
@@ -162,7 +160,7 @@ class _TransactionDialogState extends State<TransactionDialog> {
                 if (!_isQuickAdd) ...[
                   // Category dropdown
                   DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
+                    value: _selectedCategoryId.isNotEmpty ? _selectedCategoryId : null,
                     decoration: const InputDecoration(
                       labelText: 'Категория',
                       border: OutlineInputBorder(),
@@ -223,8 +221,13 @@ class _TransactionDialogState extends State<TransactionDialog> {
                      children: [
                        const Text('Категория: ', style: TextStyle(color: Colors.grey)),
                        Builder(builder: (context) {
-                          final cat = widget.categories.firstWhere((c) => c.id == _selectedCategoryId);
-                          return Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold));
+                          // Safe access
+                          try {
+                            final cat = widget.categories.firstWhere((c) => c.id == _selectedCategoryId);
+                            return Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold));
+                          } catch (_) {
+                             return const Text('Unknown');
+                          }
                        }),
                      ],
                    ),
@@ -263,9 +266,17 @@ class _TransactionDialogState extends State<TransactionDialog> {
 
   void _updateCategoryForType() {
     final filteredCategories = _getFilteredCategories();
-    if (filteredCategories.isNotEmpty &&
-        !filteredCategories.any((c) => c.id == _selectedCategoryId)) {
-      _selectedCategoryId = filteredCategories.first.id;
+    // Safety check: if selected category is not in the filtered list (or empty), select first or none
+    bool isValid = filteredCategories.any((c) => c.id == _selectedCategoryId);
+    
+    if (!isValid) {
+      if (filteredCategories.isNotEmpty) {
+        _selectedCategoryId = filteredCategories.first.id;
+      } else {
+        // No categories for this type? Should handle gracefully
+        // For now safe fallback prevents crash but dropdown will be empty/broken
+         _selectedCategoryId = ''; // Or some other sentinel
+      }
     }
   }
 
@@ -283,8 +294,10 @@ class _TransactionDialogState extends State<TransactionDialog> {
     }
   }
 
-  void _save() {
+  void _save() async {
     if (_formKey.currentState!.validate()) {
+      await HapticHelper.success();
+
       final amount = double.parse(_amountController.text);
       final note = _noteController.text.trim();
 
@@ -298,7 +311,9 @@ class _TransactionDialogState extends State<TransactionDialog> {
         createdAt: widget.transaction?.createdAt ?? DateTime.now(),
       );
 
-      Navigator.pop(context, transaction);
+      if (mounted) {
+        Navigator.pop(context, transaction);
+      }
     }
   }
 }

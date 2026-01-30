@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/monthly_budget.dart';
 import '../utils/currency_formatter.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_design.dart';
 
 class SafeDailyBudgetCard extends StatelessWidget {
   final MonthlyBudget? budget;
@@ -108,6 +110,8 @@ class SafeDailyBudgetCard extends StatelessWidget {
     );
   }
 
+
+
   Widget _buildStatusCard(
     BuildContext context, {
     Key? key,
@@ -116,73 +120,151 @@ class SafeDailyBudgetCard extends StatelessWidget {
     required BudgetStatus status,
     required double target,
   }) {
-    final colors = _getStatusColors(context, status); // Pass context
-    final colorScheme = Theme.of(context).colorScheme;
+    // Determine colors and gradient based on status
+    LinearGradient gradient;
+    Color shadowColor;
 
-    return Card(
+    if (status == BudgetStatus.danger) {
+      gradient = LinearGradient(
+        colors: [AppColors.expense, AppColors.expense.withOpacity(0.8)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      shadowColor = AppColors.expense;
+    } else if (status == BudgetStatus.warning) {
+      gradient = LinearGradient(
+        colors: [Colors.orange.shade800, Colors.orange.shade600],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      shadowColor = Colors.orange;
+    } else {
+      // Good or Neutral -> Brand Gradient
+      gradient = const LinearGradient(
+        colors: AppColors.cardGradient,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+      shadowColor = AppColors.primary;
+    }
+
+    return Container(
       key: key,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [colors['bg']!, colors['bgLight']!],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 20),
-            // Total Disposable amount
-            Center(
-              child: Column(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: AppDesign.brL,
+        gradient: gradient,
+        boxShadow: AppDesign.shadowGlow(shadowColor),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    CurrencyFormatter.formatKZTWithDecimals(mainValue),
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: colors['text'],
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Безопасный бюджет',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        'на сегодня',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'доступно до конца месяца',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colors['text']!.withOpacity(0.8),
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _getStatusMessage(status),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            // Details
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildDetailItem(
-                  'Баланс',
-                  CurrencyFormatter.formatKZT(currentBalance),
-                  colors['text']!,
+              const SizedBox(height: 24),
+              // Total Disposable amount
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      CurrencyFormatter.formatKZTWithDecimals(mainValue),
+                      style: const TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'доступно на $daysLeft дн.',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
-                Container(
-                  width: 1,
-                  height: 30,
-                  color: colors['text']!.withOpacity(0.3),
+              ),
+              const SizedBox(height: 24),
+              // Details
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.1),
+                  borderRadius: AppDesign.brM,
                 ),
-                _buildDetailItem(
-                  'Цель',
-                  CurrencyFormatter.formatKZT(target),
-                  colors['text']!,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildDetailItem(
+                      'Баланс',
+                      CurrencyFormatter.formatKZT(currentBalance),
+                      Colors.white,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 24,
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                    _buildDetailItem(
+                      'Цель',
+                      CurrencyFormatter.formatKZT(target),
+                      Colors.white,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -198,7 +280,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
             color: color.withOpacity(0.7),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           value,
           style: TextStyle(

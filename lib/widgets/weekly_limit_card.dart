@@ -294,7 +294,7 @@ class _WeeklyLimitDialogState extends State<WeeklyLimitDialog> {
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'Лимит на неделю',
-                    suffixText: 'KZT',
+                    suffixText: '₸',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.payments),
                     helperText: 'Неделя начинается с понедельника',

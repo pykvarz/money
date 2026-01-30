@@ -2,33 +2,33 @@ import 'package:intl/intl.dart';
 
 class CurrencyFormatter {
   static final NumberFormat _kztFormat = NumberFormat.currency(
-    symbol: 'KZT',
+    symbol: '₸',
     decimalDigits: 0,
     locale: 'kk_KZ',
   );
 
   static final NumberFormat _kztFormatWithDecimals = NumberFormat.currency(
-    symbol: 'KZT',
+    symbol: '₸',
     decimalDigits: 2,
     locale: 'kk_KZ',
   );
 
-  // Format amount as KZT without decimals (e.g., "5,000 KZT")
+  // Format amount as ₸ without decimals (e.g., "5,000 ₸")
   static String formatKZT(double amount) {
-    return _kztFormat.format(amount).replaceAll('KZT', '').trim() + ' KZT';
+    return _kztFormat.format(amount).replaceAll('₸', '').trim() + ' ₸';
   }
 
-  // Format amount with decimals (e.g., "2,062.50 KZT")
+  // Format amount with decimals (e.g., "2,062.50 ₸")
   static String formatKZTWithDecimals(double amount) {
-    return _kztFormatWithDecimals.format(amount).replaceAll('KZT', '').trim() + ' KZT';
+    return _kztFormatWithDecimals.format(amount).replaceAll('₸', '').trim() + ' ₸';
   }
 
   // Format compact (e.g., "5K", "1.2M")
   static String formatCompact(double amount) {
     if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1)}M KZT';
+      return '${(amount / 1000000).toStringAsFixed(1)}M ₸';
     } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(1)}K KZT';
+      return '${(amount / 1000).toStringAsFixed(1)}K ₸';
     }
     return formatKZT(amount);
   }

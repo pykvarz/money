@@ -274,7 +274,7 @@ class _MonthlyLimitDialogState extends State<MonthlyLimitDialog> {
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'Лимит на месяц',
-                    suffixText: 'KZT',
+                    suffixText: '₸',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.payments),
                   ),

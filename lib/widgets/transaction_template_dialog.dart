@@ -35,13 +35,28 @@ class _TransactionTemplateDialogState extends State<TransactionTemplateDialog> {
     _noteController = TextEditingController(text: widget.existingTemplate?.note);
     _selectedCategoryId = widget.existingTemplate?.categoryId;
     
-    // Default to first category if none selected and creating new
-    if (_selectedCategoryId == null && widget.categories.isNotEmpty) {
-      // Prefer "Food" if exists, else first
+    // Ensure selected category is valid for EXPENSE type (since templates are usually expenses)
+    // or at least exists in the list.
+    
+    final expenseCategories = widget.categories.where((c) => c.type.index == 1).toList();
+    
+    if (_selectedCategoryId == null && expenseCategories.isNotEmpty) {
+      // Try to find 'cat_food', else first expense category
       try {
-        _selectedCategoryId = widget.categories.firstWhere((c) => c.id == 'cat_food').id;
+        _selectedCategoryId = expenseCategories.firstWhere((c) => c.id == 'cat_food').id;
       } catch (_) {
-        _selectedCategoryId = widget.categories.first.id;
+        _selectedCategoryId = expenseCategories.first.id;
+      }
+    } else if (_selectedCategoryId != null) {
+      // Verify existing selection is in the filtered list (expense)
+      bool exists = expenseCategories.any((c) => c.id == _selectedCategoryId);
+      if (!exists) {
+         // If referenced category is not an expense or deleted, reset to default
+         if (expenseCategories.isNotEmpty) {
+            _selectedCategoryId = expenseCategories.first.id;
+         } else {
+            _selectedCategoryId = null; // No expense categories at all?
+         }
       }
     }
   }
@@ -88,7 +103,7 @@ class _TransactionTemplateDialogState extends State<TransactionTemplateDialog> {
                 controller: _amountController,
                 decoration: const InputDecoration(
                   labelText: 'Сумма',
-                  suffixText: 'KZT',
+                  suffixText: '₸',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.attach_money),
                 ),

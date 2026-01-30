@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
 import '../utils/currency_formatter.dart';
+// import '../theme/app_colors.dart'; // Future use
+import '../theme/app_design.dart';
 
 class TransactionListItem extends StatelessWidget {
   final Transaction transaction;
@@ -37,7 +39,7 @@ class TransactionListItem extends StatelessWidget {
         return false; // Let parent handle deletion to avoid premature UI removal
       },
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
         child: ListTile(
           onTap: onTap,
           leading: CircleAvatar(

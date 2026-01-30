@@ -17,6 +17,7 @@ import 'history_screen.dart';
 import '../widgets/quick_add_widget.dart';
 import '../widgets/budget_limit_card.dart';
 import 'package:home_widget/home_widget.dart';
+import '../theme/app_design.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -100,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
               await budgetProvider.loadCurrentBudget();
             },
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppDesign.paddingM),
               children: [
                 // Safe Daily Budget Card
                 SafeDailyBudgetCard(
@@ -113,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   todayExpense: todayExpense,
                   onSetTarget: () => _showSetTargetDialog(budgetProvider),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDesign.paddingM),
 
                 // Savings Accumulator Card
                 // Savings Accumulator Card
@@ -121,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   weeklySavings: budgetProvider.getWeeklySavingsThisMonth(expenseProvider),
                   totalPiggyBank: budgetProvider.getAllTimePiggyBankSavings(),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppDesign.paddingM),
 
                   // Month Summary
                 MonthSummaryCard(
@@ -416,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
             labelText: 'Целевой остаток',
-            suffixText: 'KZT',
+            suffixText: '₸',
             border: OutlineInputBorder(),
           ),
         ),

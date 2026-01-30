@@ -92,7 +92,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                   decoration: const InputDecoration(
                     labelText: 'Сумма',
-                    suffixText: 'KZT',
+                    suffixText: '₸',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.payments),
                   ),

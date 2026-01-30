@@ -17,6 +17,39 @@ class MainActivity : FlutterActivity() {
         methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
         methodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
+                "addBankPackage" -> {
+                    val packageName = call.argument<String>("packageName")
+                    if (packageName != null) {
+                        val prefs = getSharedPreferences("notification_settings", MODE_PRIVATE)
+                        val packages = prefs.getStringSet("bank_packages", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+                        packages.add(packageName)
+                        prefs.edit().putStringSet("bank_packages", packages).apply()
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Package name is required", null)
+                    }
+                }
+                "removeBankPackage" -> {
+                    val packageName = call.argument<String>("packageName")
+                    if (packageName != null) {
+                        val prefs = getSharedPreferences("notification_settings", MODE_PRIVATE)
+                        val packages = prefs.getStringSet("bank_packages", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+                        packages.remove(packageName)
+                        prefs.edit().putStringSet("bank_packages", packages).apply()
+                        
+                        // Also disable it
+                        prefs.edit().remove("enable_$packageName").apply()
+                        
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Package name is required", null)
+                    }
+                }
+                "getBankPackages" -> {
+                    val prefs = getSharedPreferences("notification_settings", MODE_PRIVATE)
+                    val packages = prefs.getStringSet("bank_packages", setOf())?.toList() ?: listOf<String>()
+                    result.success(packages)
+                }
                 "setBankEnabled" -> {
                     val packageName = call.argument<String>("packageName")
                     val enabled = call.argument<Boolean>("enabled") ?: false

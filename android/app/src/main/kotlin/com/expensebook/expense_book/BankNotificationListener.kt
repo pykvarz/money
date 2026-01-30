@@ -13,24 +13,21 @@ class BankNotificationListener : NotificationListenerService() {
     companion object {
         private const val TAG = "BankNotificationListener"
         private const val CHANNEL = "com.expensebook.expense_book/notification_parser"
-        
-        // Bank package names
-        private val ALLOWED_PACKAGES = setOf(
-            "kz.eurasianbank.mobile",  // Eurasian Bank (need to verify!)
-            "kz.kaspi.mobile"           // Kaspi Bank
-        )
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val packageName = sbn.packageName
         
+        // Get dynamic set of bank packages from SharedPreferences
+        val prefs = getSharedPreferences("notification_settings", MODE_PRIVATE)
+        val allowedPackages = prefs.getStringSet("bank_packages", setOf()) ?: setOf()
+        
         // Filter by package name
-        if (!ALLOWED_PACKAGES.contains(packageName)) {
+        if (!allowedPackages.contains(packageName)) {
             return
         }
         
         // Check if this bank is enabled in settings
-        val prefs = getSharedPreferences("notification_settings", MODE_PRIVATE)
         val isEnabled = prefs.getBoolean("enable_$packageName", false)
         
         if (!isEnabled) {

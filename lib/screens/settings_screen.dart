@@ -18,6 +18,7 @@ import '../services/notification_service.dart';
 import '../providers/theme_provider.dart';
 import 'package:hive/hive.dart';
 import 'notification_settings_screen.dart';
+import '../theme/app_design.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -41,16 +42,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final budget = budgetProvider.currentBudget;
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppDesign.paddingM),
             children: [
               // Target Balance Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppDesign.paddingM),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -148,12 +145,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Initial Balance Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppDesign.paddingM),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -207,12 +200,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Categories Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: ListTile(
-                  leading: const Icon(Icons.category, color: Colors.purple),
+                  leading: Icon(Icons.category, color: Colors.purple),
                   title: const Text('Категории'),
                   subtitle: const Text('Управление категориями расходов и доходов'),
                   trailing: const Icon(Icons.chevron_right),
@@ -226,12 +215,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Templates Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: ListTile(
-                  leading: const Icon(Icons.bookmark, color: Colors.blue),
+                  leading: Icon(Icons.bookmark, color: Colors.blue),
                   title: const Text('Шаблоны'),
                   subtitle: const Text('Управление шаблонами транзакций'),
                   trailing: const Icon(Icons.chevron_right),
@@ -245,12 +230,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Limits Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: ListTile(
-                  leading: const Icon(Icons.speed, color: Colors.orange),
+                  leading: Icon(Icons.speed, color: Colors.orange),
                   title: const Text('Лимиты трат'),
                   subtitle: const Text('Недельные и месячные лимиты'),
                   trailing: const Icon(Icons.chevron_right),
@@ -265,10 +246,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Fixed Expenses Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: ListTile(
                   leading: Icon(Icons.receipt_long, color: Colors.red.shade700),
                   title: const Text('Обязательные расходы'),
@@ -284,10 +261,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Notification Autoparsing Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: ListTile(
                   leading: Icon(Icons.notifications_active, color: Colors.amber.shade700),
                   title: const Text('Автопарсинг уведомлений'),
@@ -304,10 +277,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Appearance Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Consumer<ThemeProvider>(
                   builder: (context, themeProvider, _) {
                     return ListTile(
@@ -326,10 +295,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               
               // Notifications Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Column(
                   children: [
                     ListTile(
@@ -372,10 +337,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               // Backup & Reset Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Column(
                   children: [
                     ListTile(
@@ -422,13 +383,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               
               // Info Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                color: Colors.blue[50],
+                color: Colors.blue[50], // Keep color
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppDesign.paddingM),
                   child: Row(
                     children: [
                       Icon(Icons.info_outline, color: Colors.blue[700]),
@@ -518,7 +475,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               decoration: const InputDecoration(
                 labelText: 'Целевой остаток',
-                suffixText: 'KZT',
+                suffixText: '₸',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.flag),
               ),
@@ -577,7 +534,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               decoration: const InputDecoration(
                 labelText: 'Начальный баланс',
-                suffixText: 'KZT',
+                suffixText: '₸',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.account_balance_wallet),
               ),

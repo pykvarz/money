@@ -61,7 +61,7 @@ class NotificationParserService {
           await _db.addTransaction(transaction);
           onTransactionCreated(transaction);
           
-          print('Auto-created transaction: ${parsed.amount} KZT for ${parsed.keyword}');
+          print('Auto-created transaction: ${parsed.amount} ₸ for ${parsed.keyword}');
         } else {
           print('No category mapped for keyword: ${parsed.keyword}');
         }
@@ -152,6 +152,32 @@ class NotificationParserService {
     } catch (e) {
       print('Error checking bank enabled: $e');
       return false;
+    }
+  }
+
+  static Future<void> addBankPackage(String packageName) async {
+    try {
+      await platform.invokeMethod('addBankPackage', {'packageName': packageName});
+    } catch (e) {
+      print('Error adding bank package: $e');
+    }
+  }
+
+  static Future<void> removeBankPackage(String packageName) async {
+    try {
+      await platform.invokeMethod('removeBankPackage', {'packageName': packageName});
+    } catch (e) {
+      print('Error removing bank package: $e');
+    }
+  }
+
+  static Future<List<String>> getBankPackages() async {
+    try {
+      final List<dynamic> result = await platform.invokeMethod('getBankPackages');
+      return result.cast<String>();
+    } catch (e) {
+      print('Error getting bank packages: $e');
+      return [];
     }
   }
 

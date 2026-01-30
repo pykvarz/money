@@ -15,8 +15,7 @@ class NotificationSettingsScreen extends StatefulWidget {
 class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
   final _db = DatabaseHelper();
   
-  bool _eurasianEnabled = false;
-  bool _kaspiEnabled = false;
+  List<Map<String, dynamic>> _bankPackages = [];
   List<NotificationRule> _rules = [];
   List<Category> _categories = [];
 
@@ -27,14 +26,22 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   Future<void> _loadSettings() async {
-    final eurasian = await NotificationParserService.isBankEnabled('kz.eurasianbank.mobile');
-    final kaspi = await NotificationParserService.isBankEnabled('kz.kaspi.mobile');
+    final packageNames = await NotificationParserService.getBankPackages();
+    
+    List<Map<String, dynamic>> banks = [];
+    for (var pkg in packageNames) {
+      final enabled = await NotificationParserService.isBankEnabled(pkg);
+      banks.add({
+        'packageName': pkg,
+        'isEnabled': enabled,
+      });
+    }
+
     final rules = _db.getAllNotificationRules();
     final categories = _db.getCategoriesByType(CategoryType.expense);
 
     setState(() {
-      _eurasianEnabled = eurasian;
-      _kaspiEnabled = kaspi;
+      _bankPackages = banks;
       _rules = rules;
       _categories = categories;
     });
@@ -99,31 +106,115 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Банки',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Банки',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                TextButton.icon(
+                  onPressed: _showAddBankDialog,
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Добавить'),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
-            CheckboxListTile(
-              title: const Text('Eurasian Bank'),
-              subtitle: const Text('kz.eurasianbank.mobile'),
-              value: _eurasianEnabled,
-              onChanged: (value) async {
-                await NotificationParserService.setBankEnabled('kz.eurasianbank.mobile', value ?? false);
-                await _loadSettings();
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Kaspi Bank'),
-              subtitle: const Text('kz.kaspi.mobile'),
-              value: _kaspiEnabled,
-              onChanged: (value) async {
-                await NotificationParserService.setBankEnabled('kz.kaspi.mobile', value ?? false);
-                await _loadSettings();
-              },
-            ),
+            if (_bankPackages.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Text('Нет добавленных банков', 
+                    style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                ),
+              )
+            else
+              ..._bankPackages.map((bank) {
+                final pkg = bank['packageName'] as String;
+                final enabled = bank['isEnabled'] as bool;
+                
+                return ListTile(
+                  title: Text(pkg),
+                  contentPadding: EdgeInsets.zero,
+                  leading: Switch(
+                    value: enabled,
+                    onChanged: (value) async {
+                      await NotificationParserService.setBankEnabled(pkg, value);
+                      await _loadSettings();
+                    },
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Удалить банк?'),
+                          content: Text('Вы действительно хотите прекратить отслеживание уведомлений от $pkg?'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Отмена')),
+                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Удалить')),
+                          ],
+                        ),
+                      );
+                      
+                      if (confirmed == true) {
+                        await NotificationParserService.removeBankPackage(pkg);
+                        await _loadSettings();
+                      }
+                    },
+                  ),
+                );
+              }).toList(),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAddBankDialog() {
+    final controller = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Добавить банк'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Введите имя пакета приложения (Package Name):', style: TextStyle(fontSize: 12)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'например: com.kaspi.kz',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 8),
+            const Text('Вы можете найти имя пакета в Debug Panel ниже, если получили от него уведомление.', 
+              style: TextStyle(fontSize: 10, color: Colors.grey)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+          ElevatedButton(
+            onPressed: () async {
+              final pkg = controller.text.trim();
+              if (pkg.isNotEmpty) {
+                await NotificationParserService.addBankPackage(pkg);
+                // Also enable it by default
+                await NotificationParserService.setBankEnabled(pkg, true);
+                Navigator.pop(context);
+                await _loadSettings();
+              }
+            },
+            child: const Text('Добавить'),
+          ),
+        ],
       ),
     );
   }
@@ -323,7 +414,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
               const Divider(),
               if (log.parsedAmount != null && log.parsedKeyword != null) ...[
                 Text('✅ Распознано:', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                Text('  Сумма: ${log.parsedAmount} KZT', style: const TextStyle(fontSize: 11)),
+                Text('  Сумма: ${log.parsedAmount} ₸', style: const TextStyle(fontSize: 11)),
                 Text('  Ключевое слово: ${log.parsedKeyword}', style: const TextStyle(fontSize: 11)),
               ] else
                 Text('❌ Не удалось распознать', style: const TextStyle(fontSize: 11, color: Colors.red)),

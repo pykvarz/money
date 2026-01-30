@@ -209,12 +209,15 @@ class NotificationService {
   }) async {
       // Cancel aggregate summary (ID 888) if it exists, to avoid duplicates
       await AwesomeNotifications().cancel(888);
+      
+      // NEW: Systematically cancel all old notifications in this channel before re-creating
+      // This ensures that deleted categories are removed from the notification panel.
+      await AwesomeNotifications().cancelNotificationsByChannelKey(statusChannelKey);
 
       final List<Map<String, dynamic>> allItems = [...weeklyItems, ...monthlyItems];
 
       if (allItems.isEmpty) {
-          // If no limits, maybe show a placeholder or nothing? 
-          // For now, doing nothing or cancelling old ones is safer.
+          // If no limits, we've already cleared the channel above, so we can return.
           return;
       }
 
