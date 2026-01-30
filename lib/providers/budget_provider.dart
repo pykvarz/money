@@ -318,15 +318,33 @@ class BudgetProvider extends ChangeNotifier {
 
   // Delete weekly limit
   Future<void> deleteWeeklyLimit(String id, ExpenseProvider expenseProvider) async {
+    // Get the limit to find its categoryId before deletion
+    final limit = _db.getWeeklyLimitById(id);
+    
     await _db.deleteWeeklyLimit(id);
     await loadWeeklyLimits();
+    
+    // Cancel the notification for this category
+    if (limit != null) {
+      await NotificationService().cancelLimitNotification(limit.categoryId);
+    }
+    
     await updateWeeklyNotification(expenseProvider);
   }
 
   // Delete monthly limit
   Future<void> deleteMonthlyLimit(String id, ExpenseProvider expenseProvider) async {
+    // Get the limit to find its categoryId before deletion
+    final limit = _db.getMonthlyLimitById(id);
+    
     await _db.deleteMonthlyLimit(id);
     await loadMonthlyLimits();
+    
+    // Cancel the notification for this category
+    if (limit != null) {
+      await NotificationService().cancelLimitNotification(limit.categoryId);
+    }
+    
     await updateWeeklyNotification(expenseProvider);
   }
 

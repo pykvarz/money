@@ -150,8 +150,84 @@ class ExpenseProvider extends ChangeNotifier {
     return trend;
   }
 
+  // Get top trends: highest category, biggest increase, biggest decrease
+  Map<String, dynamic> getTopTrends() {
+    final now = DateTime.now();
+    final currentMonth = _currentMonth;
+    final currentYear = _currentYear;
+    
+    // Calculate previous month
+    int prevMonth = currentMonth - 1;
+    int prevYear = currentYear;
+    if (prevMonth == 0) {
+      prevMonth = 12;
+      prevYear--;
+    }
+
+    // Get spending for both months
+    final currentSpending = _db.getSpendingByCategory(currentMonth, currentYear);
+    final prevSpending = _db.getSpendingByCategory(prevMonth, prevYear);
+
+    // 1. Highest Spending Category
+    String? highestCatId;
+    double highestAmount = 0;
+    currentSpending.forEach((id, amount) {
+      if (amount > highestAmount) {
+        highestAmount = amount;
+        highestCatId = id;
+      }
+    });
+
+    // 2. Calculate changes
+    String? biggestIncreaseCatId;
+    double biggestIncreasePercent = 0;
+    
+    String? biggestDecreaseCatId;
+    double biggestDecreasePercent = 0;
+
+    // Use a set of all categories found in both months
+    final allCats = {...currentSpending.keys, ...prevSpending.keys};
+
+    for (var catId in allCats) {
+      final current = currentSpending[catId] ?? 0;
+      final previous = prevSpending[catId] ?? 0;
+
+      if (previous > 0) {
+        final percentChange = ((current - previous) / previous) * 100;
+
+        if (percentChange > 0 && percentChange > biggestIncreasePercent) {
+          biggestIncreasePercent = percentChange;
+          biggestIncreaseCatId = catId;
+        } else if (percentChange < 0 && percentChange < biggestDecreasePercent) {
+          biggestDecreasePercent = percentChange;
+          biggestDecreaseCatId = catId;
+        }
+      }
+    }
+
+    return {
+      'highest': highestCatId != null ? {
+        'id': highestCatId,
+        'amount': highestAmount,
+        'category': getCategoryById(highestCatId!)
+      } : null,
+      'increase': biggestIncreaseCatId != null ? {
+        'id': biggestIncreaseCatId,
+        'percent': biggestIncreasePercent,
+        'amount': currentSpending[biggestIncreaseCatId],
+        'category': getCategoryById(biggestIncreaseCatId!)
+      } : null,
+      'decrease': biggestDecreaseCatId != null ? {
+        'id': biggestDecreaseCatId,
+        'percent': biggestDecreasePercent,
+        'amount': currentSpending[biggestDecreaseCatId],
+        'category': getCategoryById(biggestDecreaseCatId!)
+      } : null,
+    };
+  }
+
   String _getMonthName(int month) {
-    const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[month - 1];
   }
 }

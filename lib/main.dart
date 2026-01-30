@@ -18,6 +18,7 @@ import 'screens/main_navigation_screen.dart';
 import 'services/notification_service.dart';
 import 'services/database_helper.dart';
 import 'widgets/transaction_dialog.dart';
+import 'theme/app_theme.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

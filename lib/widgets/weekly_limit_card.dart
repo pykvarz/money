@@ -3,6 +3,8 @@ import 'package:uuid/uuid.dart';
 import '../models/weekly_limit.dart';
 import '../models/category.dart' as models;
 import '../utils/currency_formatter.dart';
+import 'category_icon_circle.dart';
+import 'animated_progress_bar.dart';
 
 class WeeklyLimitProgressCard extends StatelessWidget {
   final WeeklyLimit limit;
@@ -55,14 +57,10 @@ class WeeklyLimitProgressCard extends StatelessWidget {
               Row(
                 children: [
                   if (category != null)
-                    CircleAvatar(
-                      backgroundColor: category!.color.withOpacity(0.2),
-                      radius: 20,
-                      child: Icon(
-                        category!.icon,
-                        color: category!.color,
-                        size: 20,
-                      ),
+                    CategoryIconCircle(
+                      icon: category!.icon,
+                      color: category!.color,
+                      size: 44,
                     ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -74,6 +72,7 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -92,7 +91,7 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                               '${formatDate(startDate)} - ${formatDate(endDate)}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w500,
                               ),
                             );
@@ -116,7 +115,7 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                         'из ${CurrencyFormatter.formatKZT(effectiveLimit)}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: Colors.grey[300],
                         ),
                       ),
                     ],
@@ -124,14 +123,11 @@ class WeeklyLimitProgressCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              ClipRRect(
+              AnimatedProgressBar(
+                value: percentage / 100,
+                color: progressColor,
+                height: 10,
                 borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: percentage / 100,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation(progressColor),
-                  minHeight: 8,
-                ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -253,7 +249,7 @@ class _WeeklyLimitDialogState extends State<WeeklyLimitDialog> {
                 const SizedBox(height: 8),
                 Text(
                   'Установите максимальную сумму расходов на неделю для выбранной категории',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 20),
 

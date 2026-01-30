@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/currency_formatter.dart';
+import '../theme/gradients.dart';
 
 class SavingsAccumulatorCard extends StatelessWidget {
   final double weeklySavings;
@@ -18,23 +19,17 @@ class SavingsAccumulatorCard extends StatelessWidget {
     }
 
     return Card(
-      elevation: 4,
+      elevation: 6,
+      shadowColor: Colors.black.withOpacity(0.2),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              Colors.pink.shade400,
-              Colors.purple.shade400,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          borderRadius: BorderRadius.circular(20),
+          gradient: AppGradients.greenEmerald,
         ),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             // Row 1: Piggy Bank (Total)

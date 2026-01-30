@@ -122,6 +122,19 @@ class DatabaseHelper {
     }
   }
 
+  // Reset default categories to original values
+  Future<void> resetDefaultCategories() async {
+    final categoryBox = Hive.box<Category>(_categoriesBox);
+    final defaultCategories = Category.getDefaultCategories();
+    
+    for (var category in defaultCategories) {
+      // Only reset if it exists (don't delete custom categories)
+      if (categoryBox.containsKey(category.id)) {
+        await categoryBox.put(category.id, category);
+      }
+    }
+  }
+
   static Future<void> syncFromHiveToSqlite(Box<Category> categoryBox, Box<Transaction> transactionBox) async {
     // Placeholder for SQLite sync logic.
     // Ensure this doesn't crash if SQLite is not initialized in QuickAdd mode.

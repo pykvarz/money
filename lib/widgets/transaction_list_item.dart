@@ -42,13 +42,10 @@ class TransactionListItem extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
         child: ListTile(
           onTap: onTap,
-          leading: CircleAvatar(
-            backgroundColor: category?.color.withOpacity(0.2) ?? Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Icon(
-              category?.icon ?? Icons.question_mark,
-              color: category?.color ?? Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 24,
-            ),
+          leading: CategoryIconCircle(
+            icon: category?.icon ?? Icons.question_mark,
+            color: category?.color ?? Theme.of(context).colorScheme.primary,
+            size: 48,
           ),
           title: Row(
             children: [
@@ -76,7 +73,7 @@ class TransactionListItem extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     transaction.note!,
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -87,7 +84,7 @@ class TransactionListItem extends StatelessWidget {
                   CurrencyFormatter.formatDate(transaction.date),
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[500],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),

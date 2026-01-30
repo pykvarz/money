@@ -18,6 +18,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   List<Map<String, dynamic>> _bankPackages = [];
   List<NotificationRule> _rules = [];
   List<Category> _categories = [];
+  List<String> _customBanks = [];
 
   @override
   void initState() {
@@ -39,11 +40,13 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
     final rules = _db.getAllNotificationRules();
     final categories = _db.getCategoriesByType(CategoryType.expense);
+    final customBanks = await NotificationParserService.getCustomBanks();
 
     setState(() {
       _bankPackages = banks;
       _rules = rules;
       _categories = categories;
+      _customBanks = customBanks;
     });
   }
 
@@ -59,6 +62,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           _buildPermissionCard(),
           const SizedBox(height: 16),
           _buildBankSelectionCard(),
+          const SizedBox(height: 16),
+          _buildCustomBanksCard(),
           const SizedBox(height: 16),
           _buildRulesCard(),
           const SizedBox(height: 16),
@@ -361,14 +366,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 TextButton.icon(
                   onPressed: () async {
                     await _db.clearNotificationLogs();
-                    setState(() {});
+                    await _loadSettings(); // Используем _loadSettings вместо setState
                   },
                   icon: const Icon(Icons.delete_sweep),
                   label: const Text('Очистить логи'),
                 ),
                 TextButton.icon(
-                  onPressed: () {
-                    setState(() {});
+                  onPressed: () async {
+                    await _loadSettings(); // Используем _loadSettings вместо setState
                   },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Обновить'),

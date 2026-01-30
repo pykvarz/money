@@ -73,6 +73,49 @@ class MainActivity : FlutterActivity() {
                         result.error("INVALID_ARGUMENT", "Package name is required", null)
                     }
                 }
+                "getCustomBanks" -> {
+                    val prefs = getSharedPreferences("notification_settings", MODE_PRIVATE)
+                    val customBanks = prefs.getString("custom_banks", "") ?: ""
+                    result.success(customBanks)
+                }
+                "addCustomBank" -> {
+                    val packageName = call.argument<String>("packageName")
+                    
+                    if (packageName != null) {
+                        val prefs = getSharedPreferences("notification_settings", MODE_PRIVATE)
+                        val existing = prefs.getString("custom_banks", "") ?: ""
+                        val banks = if (existing.isEmpty()) {
+                            mutableSetOf()
+                        } else {
+                            existing.split(",").toMutableSet()
+                        }
+                        
+                        banks.add(packageName)
+                        prefs.edit().putString("custom_banks", banks.joinToString(",")).apply()
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Package name is required", null)
+                    }
+                }
+                "removeCustomBank" -> {
+                    val packageName = call.argument<String>("packageName")
+                    
+                    if (packageName != null) {
+                        val prefs = getSharedPreferences("notification_settings", MODE_PRIVATE)
+                        val existing = prefs.getString("custom_banks", "") ?: ""
+                        val banks = if (existing.isEmpty()) {
+                            mutableSetOf()
+                        } else {
+                            existing.split(",").toMutableSet()
+                        }
+                        
+                        banks.remove(packageName)
+                        prefs.edit().putString("custom_banks", banks.joinToString(",")).apply()
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Package name is required", null)
+                    }
+                }
                 "openNotificationSettings" -> {
                     val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
                     startActivity(intent)

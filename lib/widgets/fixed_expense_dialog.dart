@@ -63,7 +63,7 @@ class _FixedExpenseDialogState extends State<FixedExpenseDialog> {
                 const SizedBox(height: 8),
                 Text(
                   'Регулярные платежи (аренда, коммуналка, подписки)\nОплачиваются 1 числа каждого месяца',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 20),
 

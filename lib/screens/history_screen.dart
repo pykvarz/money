@@ -118,7 +118,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           _allTransactions.isEmpty
                               ? 'История пуста'
                               : 'Ничего не найдено',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       )
                     : ListView.builder(

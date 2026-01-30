@@ -60,6 +60,7 @@ class SafeDailyBudgetCard extends StatelessWidget {
 
   Widget _buildNoTargetCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Card(
       key: const ValueKey('no_target_card'),
@@ -76,6 +77,12 @@ class SafeDailyBudgetCard extends StatelessWidget {
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withOpacity(0.1) 
+                : Colors.black.withOpacity(0.05),
+            width: 1,
           ),
         ),
         child: Column(

@@ -36,7 +36,8 @@ class MonthSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gap = income - expense;
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -47,8 +48,8 @@ class MonthSummaryCard extends StatelessWidget {
           children: [
             Text(
               'Сводка за месяц',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: isDark ? Colors.white : Colors.black87, // Адаптивный цвет!
                   ),
             ),
             const SizedBox(height: 16),
@@ -138,7 +139,12 @@ class MonthSummaryCard extends StatelessWidget {
                          children: [
                            Row(
                              children: [
-                               Icon(icon, size: 16, color: color),
+                               CategoryIconCircle(
+                                 icon: icon,
+                                 color: color,
+                                 size: 24,
+                                 withGradient: false,
+                               ),
                                const SizedBox(width: 8),
                                Expanded(
                                  child: Text(
@@ -148,11 +154,11 @@ class MonthSummaryCard extends StatelessWidget {
                                ),
                                Text(
                                  '${CurrencyFormatter.formatKZT(spent)} / ${CurrencyFormatter.formatKZT(quota)}',
-                                 style: TextStyle(
-                                   fontSize: 11,
-                                   color: spent > quota ? Colors.red : Colors.grey[700],
-                                   fontWeight: spent > quota ? FontWeight.bold : FontWeight.normal,
-                                 ),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: spent > quota ? Colors.red : (isDark ? Colors.grey[400]! : Colors.grey[700]!),
+                                    fontWeight: spent > quota ? FontWeight.bold : FontWeight.normal,
+                                  ),
                                ),
                              ],
                            ),
@@ -259,11 +265,11 @@ class MonthSummaryCard extends StatelessWidget {
               ),
               if (subtitle != null)
                 Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                   subtitle,
+                   style: TextStyle(
+                     fontSize: 12,
+                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                   ),
                 ),
             ],
           ),

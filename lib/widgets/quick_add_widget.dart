@@ -3,6 +3,7 @@ import '../utils/custom_toast.dart';
 import 'package:provider/provider.dart';
 import '../models/transaction_template.dart';
 import '../models/transaction.dart';
+import '../models/category.dart';
 import '../providers/expense_provider.dart';
 import '../providers/budget_provider.dart';
 import '../services/database_helper.dart';
@@ -137,7 +138,7 @@ class _QuickAddWidgetState extends State<QuickAddWidget> {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ),
@@ -149,20 +150,28 @@ class _QuickAddWidgetState extends State<QuickAddWidget> {
             itemCount: _templates.length,
             separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
-              
               final template = _templates[index];
-              final category = context.read<ExpenseProvider>().getCategoryById(template.categoryId);
               
-              return InkWell(
-                 onLongPress: () => _showOptions(template),
-                 borderRadius: BorderRadius.circular(20),
-                 child: ActionChip(
-                  avatar: category != null ? Icon(category.icon, size: 16, color: category.color) : null,
-                  label: Text(template.name),
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                  side: BorderSide.none,
-                  onPressed: () => _useTemplate(template),
-                ),
+              // Use Selector to efficiently listen to changes for this specific category
+              // This avoids unsafe context.read in build and rebuilds only if this category changes (unlikely but correct)
+              // Or simply access data if we treat categories as static for this view
+              return Selector<ExpenseProvider, Category?>(
+                selector: (_, provider) => provider.getCategoryById(template.categoryId),
+                builder: (context, category, child) {
+                  return InkWell(
+                    onLongPress: () => _showOptions(template),
+                    borderRadius: BorderRadius.circular(20),
+                    child: ActionChip(
+                      avatar: category != null 
+                          ? Icon(category.icon, size: 16, color: category.color) 
+                          : null,
+                      label: Text(template.name),
+                      backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor, // Use card color (lighter in dark mode)
+                      side: BorderSide.none,
+                      onPressed: () => _useTemplate(template),
+                    ),
+                  );
+                },
               );
             },
           ),

@@ -3,6 +3,8 @@ import 'package:uuid/uuid.dart';
 import '../models/monthly_limit.dart';
 import '../models/category.dart' as models;
 import '../utils/currency_formatter.dart';
+import 'category_icon_circle.dart';
+import 'animated_progress_bar.dart';
 
 class MonthlyLimitCard extends StatelessWidget {
   final MonthlyLimit limit;
@@ -49,14 +51,10 @@ class MonthlyLimitCard extends StatelessWidget {
               Row(
                 children: [
                   if (category != null)
-                    CircleAvatar(
-                      backgroundColor: category!.color.withOpacity(0.2),
-                      radius: 20,
-                      child: Icon(
-                        category!.icon,
-                        color: category!.color,
-                        size: 20,
-                      ),
+                    CategoryIconCircle(
+                      icon: category!.icon,
+                      color: category!.color,
+                      size: 44,
                     ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -71,14 +69,14 @@ class MonthlyLimitCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Месячный лимит',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                         Text(
+                           'Месячный лимит',
+                           style: TextStyle(
+                             fontSize: 12,
+                             color: Colors.grey[300],
+                             fontWeight: FontWeight.w500,
+                           ),
+                         ),
                       ],
                     ),
                   ),
@@ -105,14 +103,11 @@ class MonthlyLimitCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              ClipRRect(
+              AnimatedProgressBar(
+                value: percentage / 100,
+                color: progressColor,
+                height: 10,
                 borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: percentage / 100,
-                  backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation(progressColor),
-                  minHeight: 8,
-                ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -233,7 +228,7 @@ class _MonthlyLimitDialogState extends State<MonthlyLimitDialog> {
                 const SizedBox(height: 8),
                 Text(
                   'Установите максимальную сумму расходов на месяц для выбранной категории',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 20),
 
