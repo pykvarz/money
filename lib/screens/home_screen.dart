@@ -116,13 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: AppDesign.paddingM),
 
-                // Savings Accumulator Card
-                // Savings Accumulator Card
-                SavingsAccumulatorCard(
-                  weeklySavings: budgetProvider.getWeeklySavingsThisMonth(expenseProvider),
-                  totalPiggyBank: budgetProvider.getAllTimePiggyBankSavings(),
-                ),
-                const SizedBox(height: AppDesign.paddingM),
+                // Savings Accumulator Card removed
 
                   // Month Summary
                 MonthSummaryCard(

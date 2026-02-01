@@ -200,215 +200,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Categories Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.category, color: Colors.purple),
-                  title: const Text('Категории'),
-                  subtitle: const Text('Управление категориями расходов и доходов'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CategoriesScreen()),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Templates Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.bookmark, color: Colors.blue),
-                  title: const Text('Шаблоны'),
-                  subtitle: const Text('Управление шаблонами транзакций'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TemplatesScreen()),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Limits Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.speed, color: Colors.orange),
-                  title: const Text('Лимиты трат'),
-                  subtitle: const Text('Недельные и месячные лимиты'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LimitsScreen()),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Fixed Expenses Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.receipt_long, color: Colors.red.shade700),
-                  title: const Text('Обязательные расходы'),
-                  subtitle: const Text('Регулярные платежи (аренда, подписки)'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FixedExpensesScreen()),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Notification Autoparsing Card
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.notifications_active, color: Colors.amber.shade700),
-                  title: const Text('Автопарсинг уведомлений'),
-                  subtitle: const Text('Евразийский банк, Kaspi'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Appearance Card
-              Card(
-                child: Consumer<ThemeProvider>(
-                  builder: (context, themeProvider, _) {
-                    return ListTile(
-                      leading: const Icon(Icons.brightness_6, color: Colors.indigo),
-                      title: const Text('Тема оформления'),
-                      subtitle: Text(themeProvider.themeName),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _showThemeDialog(context, themeProvider),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Notifications Card
-              
-              // Notifications Card
-              Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.notifications, color: Colors.amber),
-                      title: const Text('Уведомления'),
-                      subtitle: const Text('Настройка времени напоминаний'),
-                    ),
-                    const Divider(height: 1),
-                    FutureBuilder<TimeOfDay>(
-                      future: _getDailyReminderTime(),
-                      builder: (context, snapshot) {
-                        final time = snapshot.data ?? const TimeOfDay(hour: 21, minute: 0);
-                        return ListTile(
-                          title: const Text('Ежедневное напоминание'),
-                          subtitle: Text('${time.hour}:${time.minute.toString().padLeft(2, '0')}'),
-                          trailing: const Icon(Icons.edit, size: 20),
-                          onTap: () => _pickDailyReminderTime(context),
-                        );
-                      }
-                    ),
-                    const Divider(height: 1),
-                    FutureBuilder<TimeOfDay>(
-                      future: _getWeeklyReminderTime(),
-                      builder: (context, snapshot) {
-                        final time = snapshot.data ?? const TimeOfDay(hour: 20, minute: 0);
-                        return ListTile(
-                          title: const Text('Итоги недели (Вс)'),
-                          subtitle: Text('${time.hour}:${time.minute.toString().padLeft(2, '0')}'),
-                          trailing: const Icon(Icons.edit, size: 20),
-                          onTap: () => _pickWeeklyReminderTime(context),
-                        );
-                      }
-                    ),
-
-
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Backup & Reset Card
-              Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.cloud_download, color: Colors.teal),
-                      title: const Text('Резервная копия'),
-                      subtitle: const Text('Сохранить или восстановить данные'),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.upload_file),
-                      title: const Text('Экспорт данных'),
-                      subtitle: const Text('Сохранить в файл'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () async {
-                         await DataService().exportData(context);
-                      },
-                    ),
-                    const Divider(height: 1),
-
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.file_download),
-                      title: const Text('Импорт данных'),
-                      subtitle: const Text('Восстановить из файла'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () async {
-                         await DataService().importData(context);
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.table_chart_outlined, color: Colors.green),
-                      title: const Text('Экспорт в Excel (CSV)'),
-                      subtitle: const Text('Скачать историю транзакций'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () async {
-                         await DataService().exportTransactionsToCsv(context);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Info Card
-              Card(
-                color: Colors.blue[50], // Keep color
-                child: Padding(
-                  padding: const EdgeInsets.all(AppDesign.paddingM),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.blue[700]),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Установите целевой баланс для активации умного планирования бюджета',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.blue[900],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               const SizedBox(height: 24),
-              _buildSectionHeader('CATEGORIES & TEMPLATES'),
+
+              _buildSectionHeader('КАТЕГОРИИ И ШАБЛОНЫ'),
               _buildSettingsGroup(
                 context,
                 children: [
@@ -417,8 +211,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.category,
                     iconColor: const Color(0xFFA855F7), // Purple
                     iconBgColor: const Color(0xFFF3E8FF),
-                    title: 'Categories',
-                    subtitle: 'Manage income & expense categories',
+                    title: 'Категории',
+                    subtitle: 'Управление категориями расходов и доходов',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const CategoriesScreen()),
@@ -430,8 +224,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.bookmark,
                     iconColor: const Color(0xFF0EA5E9), // Light Blue
                     iconBgColor: const Color(0xFFE0F2FE),
-                    title: 'Templates',
-                    subtitle: 'Manage transaction templates',
+                    title: 'Шаблоны',
+                    subtitle: 'Шаблоны для частых операций',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const TemplatesScreen()),
@@ -443,8 +237,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.speed,
                     iconColor: const Color(0xFFF97316), // Orange
                     iconBgColor: const Color(0xFFFFEDD5),
-                    title: 'Spending Limits',
-                    subtitle: 'Weekly and monthly budget limits',
+                    title: 'Лимиты',
+                    subtitle: 'Недельные и месячные ограничения',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const LimitsScreen()),
@@ -456,8 +250,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.receipt_long,
                     iconColor: const Color(0xFFEF4444), // Red
                     iconBgColor: const Color(0xFFFEE2E2),
-                    title: 'Regular Expenses',
-                    subtitle: 'Rent, subscriptions, fixed bills',
+                    title: 'Обязательные расходы',
+                    subtitle: 'Аренда, подписки, платежи',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const FixedExpensesScreen()),
@@ -466,11 +260,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildDivider(),
                    _buildSettingsTile(
                     context,
-                    icon: Icons.notifications_active, // AUTO PARSING
+                    icon: Icons.notifications_active,
                     iconColor: const Color(0xFFD97706), // Amber
                     iconBgColor: const Color(0xFFFEF3C7),
-                    title: 'Bank Notifications',
-                    subtitle: 'Auto-parsing transactions',
+                    title: 'Парсинг уведомлений',
+                    subtitle: 'Обработка SMS от банков',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
@@ -480,7 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
 
               const SizedBox(height: 24),
-              _buildSectionHeader('SYSTEM'),
+              _buildSectionHeader('СИСТЕМА'),
               _buildSettingsGroup(
                 context,
                 children: [
@@ -491,28 +285,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         icon: Icons.dark_mode,
                         iconColor: const Color(0xFF6366F1), // Indigo
                         iconBgColor: const Color(0xFFE0E7FF),
-                        title: 'Appearance',
+                        title: 'Оформление',
                         subtitle: themeProvider.themeName,
                         onTap: () => _showThemeDialog(context, themeProvider),
                       );
                     },
                   ),
-                  // Notifications Sub-section (integrated directly or separate?)
-                  // The mock shows Notifications as a header inside the card, then items.
-                  // Let's implement it as expandable or just flat items.
                   _buildDivider(),
                   _buildSettingsTile(
                     context,
                     icon: Icons.notifications,
                     iconColor: const Color(0xFFEAB308), // Yellow
                     iconBgColor: const Color(0xFFFEF9C3),
-                    title: 'Notifications',
-                    subtitle: 'Reminder schedules',
-                    onTap: null, // Just a header-like item
+                    title: 'Уведомления',
+                    subtitle: 'Настройка напоминаний',
+                    onTap: null, 
                   ),
-                   // Custom embedded items for times
                    Padding(
-                     padding: const EdgeInsets.only(left: 60, right: 16, bottom: 8), // Indent to align with text
+                     padding: const EdgeInsets.only(left: 60, right: 16, bottom: 8), 
                      child: Column(
                        children: [
                          FutureBuilder<TimeOfDay>(
@@ -521,7 +311,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               final time = snapshot.data ?? const TimeOfDay(hour: 21, minute: 0);
                               return _buildTimeRow(
                                 context, 
-                                'Daily Reminder', 
+                                'Ежедневное', 
                                 '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
                                 () => _pickDailyReminderTime(context)
                               );
@@ -534,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               final time = snapshot.data ?? const TimeOfDay(hour: 20, minute: 0);
                               return _buildTimeRow(
                                 context, 
-                                'Weekly Summary (Sun)', 
+                                'Итоги недели (Вс)', 
                                 '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
                                 () => _pickWeeklyReminderTime(context)
                               );
@@ -547,28 +337,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
 
               const SizedBox(height: 24),
-              _buildSectionHeader('DATA MANAGEMENT'),
+              _buildSectionHeader('ДАННЫЕ'),
                _buildSettingsGroup(
                 context,
                 children: [
-                  _buildSettingsTile(
-                    context,
-                    icon: Icons.cloud_download,
-                    iconColor: const Color(0xFF10B981), // Teal/Green
-                    iconBgColor: const Color(0xFFD1FAE5),
-                    title: 'Backup',
-                    subtitle: 'Save or restore your data',
-                    onTap: null, // Just header
-                  ),
-                   _buildDivider(),
-                  _buildSettingsTile(
+                   _buildSettingsTile(
                     context,
                     icon: Icons.upload_file,
                     iconColor: const Color(0xFF4B5563), // Grey
                     iconBgColor: const Color(0xFFF3F4F6),
-                    title: 'Export Data',
-                    subtitle: 'Save to internal file',
+                    title: 'Экспорт данных',
+                    subtitle: 'Сохранить в файл',
                     onTap: () async => await DataService().exportData(context),
+                  ),
+                  _buildDivider(),
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.file_download,
+                    iconColor: const Color(0xFF4B5563), // Grey
+                    iconBgColor: const Color(0xFFF3F4F6),
+                    title: 'Импорт данных',
+                    subtitle: 'Восстановить из файла',
+                    onTap: () async => await DataService().importData(context),
                   ),
                   _buildDivider(),
                   _buildSettingsTile(
@@ -576,8 +366,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.table_chart,
                     iconColor: const Color(0xFF10B981), // Green
                     iconBgColor: const Color(0xFFD1FAE5),
-                    title: 'Export to Excel (CSV)',
-                    subtitle: 'Download transaction history',
+                    title: 'Экспорт в Excel (CSV)',
+                    subtitle: 'Скачать историю',
                     onTap: () async => await DataService().exportTransactionsToCsv(context),
                   ),
                   _buildDivider(),
@@ -586,8 +376,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.refresh,
                     iconColor: const Color(0xFFEF4444), // Red
                     iconBgColor: const Color(0xFFFEE2E2),
-                    title: 'Reset Categories',
-                    subtitle: 'Restore default icons and colors',
+                    title: 'Сбросить категории',
+                    subtitle: 'Восстановить стандартные',
                     onTap: () => _resetDefaultCategories(context),
                   ),
                 ],

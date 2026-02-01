@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../models/category.dart';
 import '../utils/currency_formatter.dart';
-// import '../theme/app_colors.dart'; // Future use
+import 'category_icon_circle.dart';
 import '../theme/app_design.dart';
 
 class TransactionListItem extends StatelessWidget {

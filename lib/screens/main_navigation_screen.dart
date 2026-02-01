@@ -24,7 +24,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
   final List<Widget> _screens = const [
     HomeScreen(),
     SavingsScreen(),
-    AnalyticsScreen(),
     LibraryScreen(),
   ];
 
@@ -75,11 +74,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> with Widget
             icon: Icon(Icons.savings_outlined),
             selectedIcon: Icon(Icons.savings),
             label: 'Копилка',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline),
-            selectedIcon: Icon(Icons.pie_chart),
-            label: 'Аналитика',
           ),
           NavigationDestination(
             icon: Icon(Icons.library_books_outlined),

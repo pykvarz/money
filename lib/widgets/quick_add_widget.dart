@@ -166,7 +166,7 @@ class _QuickAddWidgetState extends State<QuickAddWidget> {
                           ? Icon(category.icon, size: 16, color: category.color) 
                           : null,
                       label: Text(template.name),
-                      backgroundColor: Theme.of(context).cardTheme.color ?? Theme.of(context).cardColor, // Use card color (lighter in dark mode)
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       side: BorderSide.none,
                       onPressed: () => _useTemplate(template),
                     ),

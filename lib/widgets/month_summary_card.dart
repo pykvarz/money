@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/currency_formatter.dart';
 import '../theme/app_design.dart';
+import 'category_icon_circle.dart';
 
 class MonthSummaryCard extends StatelessWidget {
   final double income;

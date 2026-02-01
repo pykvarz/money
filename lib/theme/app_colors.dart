@@ -5,9 +5,17 @@ class AppColors {
   static const Color seedDeepPurple = Colors.deepPurple;
   static const Color primary = seedDeepPurple; // Primary brand color
 
+  // Semantic Colors
+  static const Color primaryPurple = Color(0xFF6750A4);
+  static const Color primaryBlue = Color(0xFF2196F3);
+  static const Color successGreen = Color(0xFF2E7D32);
+  static const Color emerald = Color(0xFF2ECC71);
+  static const Color warning = Color(0xFFFBC02D);
+  static const Color error = Color(0xFFB3261E);
+
   // Custom semantics to ensure consistency across the app
-  static const Color expense = Color(0xFFB3261E); // Material 3 Error equivalent
-  static const Color income = Color(0xFF2E7D32);  // Standard Green
+  static const Color expense = error; 
+  static const Color income = successGreen;
   
   // Gradients
   static const List<Color> savingsGradient = [
@@ -16,7 +24,7 @@ class AppColors {
   ];
   
   static const List<Color> cardGradient = [
-    Color(0xFF6750A4),
+    primaryPurple,
     Color(0xFF7E57C2),
   ];
 }

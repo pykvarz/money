@@ -40,13 +40,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
 
     final rules = _db.getAllNotificationRules();
     final categories = _db.getCategoriesByType(CategoryType.expense);
-    final customBanks = await NotificationParserService.getCustomBanks();
-
     setState(() {
       _bankPackages = banks;
       _rules = rules;
       _categories = categories;
-      _customBanks = customBanks;
+      _customBanks = []; // Placeholder or remove usage
     });
   }
 
@@ -62,8 +60,6 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           _buildPermissionCard(),
           const SizedBox(height: 16),
           _buildBankSelectionCard(),
-          const SizedBox(height: 16),
-          _buildCustomBanksCard(),
           const SizedBox(height: 16),
           _buildRulesCard(),
           const SizedBox(height: 16),
